@@ -16,6 +16,11 @@ class LoanPredictor():
 		self.mlt2Selected = ''
 		self.mlt3Selected = ''
 		self.mlt4Selected = ''
+		self.employmentType = ''
+		self.propertyType =''
+		self.cardType = ''
+		self.mthSalary = ''
+		self.loanAmount = ''
 		self.window = window
 		self.window.title("Bank Loan Predictor")
 		self.window.resizable(False, False)
@@ -177,44 +182,45 @@ class LoanPredictor():
 	# SubCategory1 = Employment_Type
 	def createSubCategory1(self):
 		labelSubCat1 = Label(self.window, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=10,y=50)
-		var = StringVar()
-		empType1 = Radiobutton(self.window, text="Employee", variable=var, value=1,command=self.saveSelectedValues).place(x=10,y=70)
-		empType2 = Radiobutton(self.window, text="Employer", variable=var, value=2,command=self.saveSelectedValues).place(x=10,y=90)
-		empType3 = Radiobutton(self.window, text="Fresh Graduate", variable=var, value=3, command=self.saveSelectedValues).place(x=10,y=110)
-		empType4 = Radiobutton(self.window, text="Self Employment", variable=var, value=4, command=self.saveSelectedValues).place(x=10,y=130)			
+		self.employmentType = StringVar()
+		empType1 = Radiobutton(self.window, text="Employee", variable=self.employmentType, value="Employee",command=self.saveSelectedValues).place(x=10,y=70)
+		empType2 = Radiobutton(self.window, text="Employer", variable=self.employmentType, value="Employer",command=self.saveSelectedValues).place(x=10,y=90)
+		empType3 = Radiobutton(self.window, text="Fresh Graduate", variable=self.employmentType, value="Fresh Graduate", command=self.saveSelectedValues).place(x=10,y=110)
+		empType4 = Radiobutton(self.window, text="Self Employment", variable=self.employmentType, value="Self Employment", command=self.saveSelectedValues).place(x=10,y=130)			
 		
 	# SubCategory2 = Credit_Card_types
 	def createSubCategory2(self):
 		labelSubCat2 = Label(self.window, text ="Type of Credit Cards", font=('Helvetica', 10), justify=LEFT).place(x=10,y=170)
-		var = StringVar()
-		cardType1 = Radiobutton(self.window, text="Normal", variable=var, value=1,command=self.saveSelectedValues).place(x=10,y=190)
-		cardType2 = Radiobutton(self.window, text="Gold", variable=var, value=2,command=self.saveSelectedValues).place(x=10,y=210)
-		cardType3 = Radiobutton(self.window, text="Platinum", variable=var, value=3, command=self.saveSelectedValues).place(x=10,y=230)			
+		self.cardType = StringVar()
+		cardType1 = Radiobutton(self.window, text="Normal", variable=self.cardType, value="Normal",command=self.saveSelectedValues).place(x=10,y=190)
+		cardType2 = Radiobutton(self.window, text="Gold", variable=self.cardType, value="Gold",command=self.saveSelectedValues).place(x=10,y=210)
+		cardType3 = Radiobutton(self.window, text="Platinum", variable=self.cardType, value="Platinum", command=self.saveSelectedValues).place(x=10,y=230)			
 		
 	# SubCategory3 = Property_Type
 	def createSubCategory3(self):
 		labelSubCat3 = Label(self.window, text ="Type of Properties", font=('Helvetica', 10), justify=LEFT).place(x=10,y=270) 
-		var = StringVar()
-		propertyType1 = Radiobutton(self.window, text="Bungalow", variable=var, value=3, command=self.saveSelectedValues).place(x=10,y=290)		
-		propertyType2 = Radiobutton(self.window, text="Condominium", variable=var, value=1,command=self.saveSelectedValues).place(x=10,y=310)
-		propertyType3 = Radiobutton(self.window, text="Terrace", variable=var, value=2,command=self.saveSelectedValues).place(x=10,y=330)
+		self.propertyType = StringVar()
+		propertyType1 = Radiobutton(self.window, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=10,y=290)		
+		propertyType2 = Radiobutton(self.window, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=10,y=310)
+		propertyType3 = Radiobutton(self.window, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=10,y=330)
 		
 	# SubCategory4 = Loan_Amount
 	def createSubCategory4(self):
 		labelSubCat4 = Label(self.window, text ="Loan Amount (RM)", font=('Helvetica', 10), justify=LEFT).place(x=350,y=50)
-		var = StringVar()
-		loanAmount1 = Radiobutton(self.window, text="100,000 - 300,000", variable=var, value=1,command=self.saveSelectedValues).place(x=350,y=70)
-		loanAmount2 = Radiobutton(self.window, text="300,000 - 500,000", variable=var, value=2,command=self.saveSelectedValues).place(x=350,y=90)
-		loanAmount3 = Radiobutton(self.window, text="500,000 - 700,000", variable=var, value=3, command=self.saveSelectedValues).place(x=350,y=110)
-		loanAmount4 = Radiobutton(self.window, text="700,000 - 900,000", variable=var, value=4, command=self.saveSelectedValues).place(x=350,y=130)			
+		self.loanAmount = StringVar()
+		loanAmount1 = Radiobutton(self.window, text="100,000 - 300,000", variable=self.loanAmount, value="100,000 - 300,000", command=self.saveSelectedValues).place(x=350,y=70)
+		loanAmount2 = Radiobutton(self.window, text="300,000 - 500,000", variable=self.loanAmount, value="300,000 - 500,000", command=self.saveSelectedValues).place(x=350,y=90)
+		loanAmount3 = Radiobutton(self.window, text="500,000 - 700,000", variable=self.loanAmount, value="500,000 - 700,000", command=self.saveSelectedValues).place(x=350,y=110)
+		loanAmount4 = Radiobutton(self.window, text="700,000 - 900,000", variable=self.loanAmount, value="700,000 - 900,000", command=self.saveSelectedValues).place(x=350,y=130)			
 
 	# SubCategory5 = Monthly_Salary
 	def createSubCategory5(self):
 		labelSubCat5 = Label(self.window, text ="Monthly Salary (RM)", font=('Helvetica', 10), justify=LEFT).place(x=350,y=170)
-		var = StringVar()
-		cardType1 = Radiobutton(self.window, text="4,000 - 7,000", variable=var, value=1,command=self.saveSelectedValues).place(x=350,y=190)
-		cardType2 = Radiobutton(self.window, text="7,000 - 10,000", variable=var, value=2,command=self.saveSelectedValues).place(x=350,y=210)
-		cardType3 = Radiobutton(self.window, text="10,000 - 13,000", variable=var, value=3, command=self.saveSelectedValues).place(x=350,y=230)	
+		self.mthSalary = StringVar()
+		mthSalary1 = Radiobutton(self.window, text="<4,000", variable=self.mthSalary, value="<4,000", command=self.saveSelectedValues).place(x=350,y=190)
+		mthSalary2 = Radiobutton(self.window, text="4,000 - 7,000", variable=self.mthSalary, value="4,000 - 7,000", command=self.saveSelectedValues).place(x=350,y=210)
+		mthSalary3 = Radiobutton(self.window, text="7,000 - 10,000", variable=self.mthSalary, value="7,000 - 10,000", command=self.saveSelectedValues).place(x=350,y=230)
+		mthSalary4 = Radiobutton(self.window, text="10,000 - 13,000", variable=self.mthSalary, value="10,000 - 13,000", command=self.saveSelectedValues).place(x=350,y=250)	
 
 	# Reset Button On Clicked
 	def resetButtonOnClicked(self):
@@ -230,7 +236,11 @@ class LoanPredictor():
 		pass
 	
 	def saveSelectedValues(self):
-		pass
+		print (self.employmentType.get() + "\n" + 
+			   self.cardType.get() + "\n" +
+			   self.propertyType.get() + "\n" +		
+			   self.loanAmount.get() + "\n" +
+			   self.mthSalary.get() + "\n")
 		#employmentType = 
 	# Generate SVM Accordingly
 	def SVMRbf(self): 
