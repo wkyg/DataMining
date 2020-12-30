@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter import messagebox
 import tkinter as tk
+import pandas as pd
 
 class LoanPredictor():
 
