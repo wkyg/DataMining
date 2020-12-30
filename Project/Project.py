@@ -52,7 +52,7 @@ class LoanPredictor():
 		
 		helpMenu = tk.Menu(menubar, tearoff = 0)
 		helpMenu.add_command(label = "About Us", command = self.aboutUs)	
-		helpMenu.add_command(label = "How to Use")			
+		helpMenu.add_command(label = "How to Use", command = self.howToUse)
 		menubar.add_cascade(label = "Help", menu = helpMenu)
 		
 		self.mainDisplay()
@@ -177,7 +177,8 @@ class LoanPredictor():
 		messagebox.showinfo("About Us","TDS3301 - Data Mining Project\nGroup Member:\nOng Shuoh Chwen 1171102212\nYong Wen Kai 1171101664\nLecturer:\nDr. Ting Choo Yee")
 	
 	def howToUse(self):
-		pass
+		messagebox.showinfo("How to use","1. Choose the machine learning technique\n2. Choose the Employment type followed by Type of credit cards, type of properties, "
+										 "loan amount and monthly salary\n3. Select the machine learning technique's parameters\n 4. Click predict now")
 	# Create Sub-Categories
 	# SubCategory1 = Employment_Type
 	def createSubCategory1(self):
