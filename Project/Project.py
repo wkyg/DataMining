@@ -52,7 +52,7 @@ class LoanPredictor():
 		
 		helpMenu = tk.Menu(menubar, tearoff = 0)
 		helpMenu.add_command(label = "About Us", command = self.aboutUs)	
-		helpMenu.add_command(label = "How to Use", command = self.howToUse)
+		helpMenu.add_command(label = "How to Use")			
 		menubar.add_cascade(label = "Help", menu = helpMenu)
 		
 		self.mainDisplay()
@@ -177,8 +177,7 @@ class LoanPredictor():
 		messagebox.showinfo("About Us","TDS3301 - Data Mining Project\nGroup Member:\nOng Shuoh Chwen 1171102212\nYong Wen Kai 1171101664\nLecturer:\nDr. Ting Choo Yee")
 	
 	def howToUse(self):
-		messagebox.showinfo("How to use","1. Choose the machine learning technique\n2. Choose the Employment type followed by Type of credit cards, type of properties, "
-										 "loan amount and monthly salary\n3. Select the machine learning technique's parameters\n 4. Click predict now")
+		pass
 	# Create Sub-Categories
 	# SubCategory1 = Employment_Type
 	def createSubCategory1(self):
@@ -203,7 +202,8 @@ class LoanPredictor():
 		self.propertyType = StringVar()
 		propertyType1 = Radiobutton(self.window, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=10,y=290)		
 		propertyType2 = Radiobutton(self.window, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=10,y=310)
-		propertyType3 = Radiobutton(self.window, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=10,y=330)
+		propertyType3 = Radiobutton(self.window, text="Flat", variable=self.propertyType, value="Flat",command=self.saveSelectedValues).place(x=10,y=330)
+		propertyType4 = Radiobutton(self.window, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=10,y=350)
 		
 	# SubCategory4 = Loan_Amount
 	def createSubCategory4(self):
