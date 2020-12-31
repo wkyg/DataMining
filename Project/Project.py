@@ -163,7 +163,6 @@ class LoanPredictor():
 		df = pd.read_csv("Bank_CS.csv")
 		df1 = df.copy()
 		df1
-		print (df1.head())
 		
 		# Duplicate the dataframe
 		df1 = df.copy()
@@ -182,9 +181,6 @@ class LoanPredictor():
 		# Check missing values again
 		df1.isnull().sum()
 		msno.bar(df1)
-		
-		# Show all Data Types of Df1
-		print(df1.dtypes)	
 		
 		# Dealing with Noisy Data
 		# Employment_Type
@@ -235,8 +231,8 @@ class LoanPredictor():
 		#Applying SMOTE based on Decision
 		self.df3 = self.df2.copy()
 
-		dictionary = defaultdict(LabelEncoder)
-		self.df3 = self.df2.apply(lambda x: dictionary[x.name].fit_transform(x))
+		self.dictionary = defaultdict(LabelEncoder)
+		self.df3 = self.df2.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 
 		y = self.df3.Decision
 		X = self.df3.drop(columns =['Decision'])
@@ -247,8 +243,7 @@ class LoanPredictor():
 		
 		# Exploratory Data Analysis after SMOTE (Based on Decision)
 		dfSmote = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1) 
-		dfSmote = dfSmote.apply(lambda x: dictionary[x.name].inverse_transform(x))
-		print(dfSmote.head())
+		dfSmote = dfSmote.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		# Remove the features with lowest ranking after performing Feature Selection (Boruta and RFE)
 		self.X_res.drop(columns=["Number_of_Properties","Loan_Amount"], axis=1, inplace=True)
@@ -324,24 +319,42 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.armFrame, bg="pink",width="600",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.armFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.armFrame, width="600",height = "600").grid(row=1, column=0)
-		'''
+
+		
 		df4 = self.df3.copy()
 		df4.drop(axis= 1, inplace = True, columns = ['Employment_Type', 'Credit_Card_types','Property_Type','Monthly_Salary','Loan_Amount'])
-		df4 = df4.apply(lambda x: dictionary[x.name].inverse_transform(x))
-		df4_dummy = pd.get_dummies(df4)
+		df4 = df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
+		self.df4_dummy = pd.get_dummies(df4)
 		
-		minsupp = tk.slider('Choose the minimum support', min_value=0.01, max_value=1.0)
-		minconf = tk.slider('Choose the minimum confidence', min_value=0.01, max_value=1.0)
-		minlift = tk.slider('Choose the minimum lift', min_value=0.01, max_value=2.0)
-		maxante = tk.slider('Choose maximum number of antecedent', min_value = 1, max_value=10)
-		maxcons = tk.slider('Choose maximum number of consequent', min_value = 1, max_value=10)
+		self.minSuppValue = IntVar()
+		self.minConfValue = IntVar()
+		self.minLiftValue = IntVar()
+		self.maxAnteValue = IntVar()
+		self.maxConsValue = IntVar()
 		
-		frequent = apriori(df4_dummy, min_support=0.5, use_colnames=True)
+		minSuppLabel = Label(self.armFrame, text='Choose the minimum support').place(x=10,y=50)
+		minsupp = tk.Scale(self.armFrame, from_=0.01, to=1.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minSuppValue).place(x=10,y=70)
+		minConfLabel = Label(self.armFrame, text='Choose the minimum confidence').place(x=10,y=110)		
+		minconf = tk.Scale(self.armFrame, from_=0.01, to=1.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=10,y=130)
+		minLiftLabel = Label(self.armFrame, text='Choose the minimum lift').place(x=10,y=170)
+		minlift = tk.Scale(self.armFrame, from_=0.01, to=2.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=10,y=190)
+		maxAnteLabel = Label(self.armFrame, text='Choose maximum number of antecedent').place(x=10,y=230)		
+		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=10,y=250)
+		maxConsLabel = Label(self.armFrame, text='Choose maximum number of consequent').place(x=10,y=290)			
+		maxcons = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxConsValue).place(x=10,y=310)
+		generateBtn = Button(self.armFrame, text="Generate Rules", command=self.generateARM).place(x=230,y=350, height=50, width=150)
+		
+	def generateARM(self):
+		'''
+		frequent = apriori(self.df4_dummy, min_support=0.5, use_colnames=True)
 		rules = association_rules(frequent, metric="lift", min_threshold=1.0)
 		rules["antecedent_len"] = rules["antecedents"].apply(lambda x: len(x))
 		rules["consequent_len"] = rules["consequents"].apply(lambda x: len(x))
 		rules[(rules['confidence'] > 0.5) & (rules['antecedent_len'] <= 2) & (rules['consequent_len'] <= 2)].nlargest(10, 'lift')
 		'''
+		association_rules = apriori(self.df4_dummy, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get())
+		association_rules = list(association_rules)
+
 	def runkmc(self):
 		self.destroyFrames()
 		self.mlt1Selected.set(False)
@@ -673,16 +686,11 @@ class LoanPredictor():
 
 	# Reset Button On Clicked
 	def resetButtonOnClicked(self):
-		self.mainDisplay()
-		self.mlt1Selected.set(False)
-		self.mlt2Selected.set(False)
-		self.mlt3Selected.set(False)
-		self.mlt4Selected.set(False)
-		self.checkMLT()
+		self.runPM()
+		self.destroyFrames()
 		
 	# Prediction Button On Clicked
 	def predictionButtonOnClicked(self):
-		print("Predicted Value")
 		clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
 
 		#Train the model using the training sets
