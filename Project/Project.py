@@ -764,7 +764,7 @@ class LoanPredictor():
 
 		for kernel in kernels:
 			print("Kernel: " + str(kernel))
-			clf = svm.SVC(kernel=kernel, gamma='auto', random_state = 1, probability=True)
+			clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
 
 			#Train the model using the training sets
 			clf.fit(self.X_train, self.y_train)
