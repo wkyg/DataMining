@@ -10,6 +10,7 @@ from matplotlib.backends.backend_tkagg import (
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
+from apyori import apriori
 import altair as alt
 import missingno as msno
 from string import ascii_letters
@@ -242,8 +243,8 @@ class LoanPredictor():
 		colnames = self.X_res.columns
 		
 		# Exploratory Data Analysis after SMOTE (Based on Decision)
-		dfSmote = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1) 
-		dfSmote = dfSmote.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
+		self.dfSmote = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1) 
+		self.dfSmote = self.dfSmote.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		# Remove the features with lowest ranking after performing Feature Selection (Boruta and RFE)
 		self.X_res.drop(columns=["Number_of_Properties","Loan_Amount"], axis=1, inplace=True)
@@ -321,23 +322,22 @@ class LoanPredictor():
 		emptyCanvas = tk.Canvas(self.armFrame, width="600",height = "600").grid(row=1, column=0)
 
 		
-		df4 = self.df3.copy()
-		df4.drop(axis= 1, inplace = True, columns = ['Employment_Type', 'Credit_Card_types','Property_Type','Monthly_Salary','Loan_Amount'])
-		df4 = df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
-		self.df4_dummy = pd.get_dummies(df4)
+		self.df4 = self.df3.copy()
+		self.df4.drop(axis= 1, inplace = True, columns = ['Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
+		self.df4 = self.df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
-		self.minSuppValue = IntVar()
-		self.minConfValue = IntVar()
-		self.minLiftValue = IntVar()
-		self.maxAnteValue = IntVar()
-		self.maxConsValue = IntVar()
+		self.minSuppValue = DoubleVar()
+		self.minConfValue = DoubleVar()
+		self.minLiftValue = DoubleVar()
+		self.maxAnteValue = DoubleVar()
+		self.maxConsValue = DoubleVar()
 		
 		minSuppLabel = Label(self.armFrame, text='Choose the minimum support').place(x=10,y=50)
-		minsupp = tk.Scale(self.armFrame, from_=0.01, to=1.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minSuppValue).place(x=10,y=70)
+		minsupp = tk.Scale(self.armFrame, from_=0.0001, to=0.0300, digits = 5, resolution = 0.0001, orient=HORIZONTAL, variable=self.minSuppValue).place(x=10,y=70)
 		minConfLabel = Label(self.armFrame, text='Choose the minimum confidence').place(x=10,y=110)		
-		minconf = tk.Scale(self.armFrame, from_=0.01, to=1.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=10,y=130)
+		minconf = tk.Scale(self.armFrame, from_=0.50, to=1.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=10,y=130)
 		minLiftLabel = Label(self.armFrame, text='Choose the minimum lift').place(x=10,y=170)
-		minlift = tk.Scale(self.armFrame, from_=0.01, to=2.0, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=10,y=190)
+		minlift = tk.Scale(self.armFrame, from_=0.50, to=2.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=10,y=190)
 		maxAnteLabel = Label(self.armFrame, text='Choose maximum number of antecedent').place(x=10,y=230)		
 		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=10,y=250)
 		maxConsLabel = Label(self.armFrame, text='Choose maximum number of consequent').place(x=10,y=290)			
@@ -345,16 +345,41 @@ class LoanPredictor():
 		generateBtn = Button(self.armFrame, text="Generate Rules", command=self.generateARM).place(x=230,y=350, height=50, width=150)
 		
 	def generateARM(self):
+		records = []
+		for i in range(0, 2350):
+			records.append([str(self.df4.values[i,j]) for j in range(0, 5)])
+			
+		association_rules = apriori(records, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get(), min_length=2)
 		'''
-		frequent = apriori(self.df4_dummy, min_support=0.5, use_colnames=True)
-		rules = association_rules(frequent, metric="lift", min_threshold=1.0)
+		rules = association_rules(records, metric="lift", min_threshold=self.minLiftValue.get())
 		rules["antecedent_len"] = rules["antecedents"].apply(lambda x: len(x))
 		rules["consequent_len"] = rules["consequents"].apply(lambda x: len(x))
-		rules[(rules['confidence'] > 0.5) & (rules['antecedent_len'] <= 2) & (rules['consequent_len'] <= 2)].nlargest(10, 'lift')
+		print(rules[(rules['confidence'] >= self.minConfValue.get()) & (rules['antecedent_len'] <= self.maxAnteValue.get()) & (rules['consequent_len'] <= self.maxConsValue.get())])
 		'''
-		association_rules = apriori(self.df4_dummy, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get())
-		association_rules = list(association_rules)
+		association_rules_list = list(association_rules)
+		
+		print(len(association_rules_list))
+		
+		for item in association_rules_list:
 
+			# first index of the inner list
+			# Contains base item and add item
+			pair = item[0] 
+			items = [x for x in pair]
+			print("Rule: " + items[0] + " -> " + items[1])
+
+			#second index of the inner list
+			print("Support: " + str(item[1]))
+
+			#third index of the list located at 0th
+			#of the third index of the inner list
+
+			print("Confidence: " + str(item[2][0][2]))
+			print("Lift: " + str(item[2][0][3]))
+			print("=====================================")
+			
+	
+	
 	def runkmc(self):
 		self.destroyFrames()
 		self.mlt1Selected.set(False)
