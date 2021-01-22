@@ -3,6 +3,7 @@ from tkinter.ttk import *
 from tkinter import messagebox
 import tkinter as tk
 import pandas as pd
+from pandas import DataFrame
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (
@@ -56,13 +57,13 @@ class LoanPredictor():
 		self.window.title("Bank Loan Predictor")
 		self.window.resizable(False, False)
 		window_height = 600
-		window_width = 600
+		window_width = 1200
 
 		screen_width = self.window.winfo_screenwidth()
 		screen_height = self.window.winfo_screenheight()
 
-		x_cordinate = int((screen_width/2) - (window_width/2))
-		y_cordinate = int((screen_height/3.3) - (window_height/3.3))
+		x_cordinate = int((screen_width/3) - (window_width/3))
+		y_cordinate = int((screen_height/3) - (window_height/3))
 
 		self.window.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
 		
@@ -111,11 +112,11 @@ class LoanPredictor():
 	# Create Main Display
 	def runPM(self):
 		self.destroyFrames()
-		self.predictionFrame = tk.Frame(self.window, width=600, height=600)
+		self.predictionFrame = tk.Frame(self.window, width=1200, height=600)
 		self.predictionFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.predictionFrame, bg="pink",width="600",height = "40").grid(row=0, column=0)
+		canvas = tk.Canvas(self.predictionFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.predictionFrame, bg="pink", fg="white", text ="Prediction Model", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.predictionFrame, width="600",height = "600").grid(row=1, column=0)	
+		emptyCanvas = tk.Canvas(self.predictionFrame, width="1200",height = "600").grid(row=1, column=0)	
 		# Create Sub-Categories
 		# SubCategory1 = Employment_Type
 		labelSubCat1 = Label(self.predictionFrame, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=10,y=50)
@@ -265,26 +266,97 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)
-		self.b4SmoteFrame = tk.Frame(self.window, width=600, height=600)
+		self.b4SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.b4SmoteFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.b4SmoteFrame, bg="pink",width="600",height = "40").grid(row=0,column=0)
+		canvas = tk.Canvas(self.b4SmoteFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.b4SmoteFrame, bg="pink", fg="white", text ="EDA (Before SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.b4SmoteFrame, width="600",height = "600").grid(row=1, column=0)
-		fig = self.beforeSmotePlot()
-		canvas = FigureCanvasTkAgg(fig, master=self.b4SmoteFrame)  # A tk.DrawingArea.
-		canvas.draw()
-		canvas.get_tk_widget().pack()
+		emptyCanvas = tk.Canvas(self.b4SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
 		
-	def beforeSmotePlot(self):
-		# what is the decision made by the bank the most frequent?
-		b = sns.countplot(x='Decision', data = self.df2)
+		# which type of employment is likely to have the loan accepted?
+		typeOfEmploy = DataFrame(self.df3, columns=['Employment_Type','Decision'])
+		
+		figure = plt.Figure(figsize=(5,5), dpi=50)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.b4SmoteFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=10,y=60)
+		typeOfEmploy = typeOfEmploy[['Employment_Type', 'Decision']].groupby('Employment_Type').sum()
+		typeOfEmploy.plot(kind='bar', legend=True, ax=ax)
+		ax.set_title('Type of employment to have the loan accepted')
+		
+		# which type of credit card user is likely to have the loan accepted?
+		typeOfCard = DataFrame(self.df3, columns=['Credit_Card_types','Decision'])
+		
+		figure1 = plt.Figure(figsize=(5,5), dpi=50)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.b4SmoteFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=270,y=60)
+		typeOfCard = typeOfCard[['Credit_Card_types', 'Decision']].groupby('Credit_Card_types').sum()
+		typeOfCard.plot(kind='bar', legend=True, ax=ax1)
+		ax1.set_title('Type of credit card user to have the loan accepted')	
 
-		for p in b.patches:
-			b.annotate("%.0f" % p.get_height(), (p.get_x() + 
-			p.get_width() / 2., p.get_height()), 
-			ha='center', va='center', rotation=0, 
-			xytext=(0, 18), textcoords='offset points')
-		return b
+		# which type of properties is likely to have the loan accepted?
+		typeOfProperty = DataFrame(self.df3, columns=['Property_Type','Decision'])
+		
+		figure2 = plt.Figure(figsize=(5,5), dpi=50)
+		ax2 = figure2.add_subplot(111)
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.b4SmoteFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=530,y=60)
+		typeOfProperty = typeOfProperty[['Property_Type', 'Decision']].groupby('Property_Type').sum()
+		typeOfProperty.plot(kind='bar', legend=True, ax=ax2)
+		ax2.set_title('Type of properties to have the loan accepted')		
+		
+		# what is the monthly salary that is likely to have the loan accepted?
+		monthlySalary = DataFrame(self.df3, columns=['Monthly_Salary','Decision'])
+		
+		figure3 = plt.Figure(figsize=(5,5), dpi=50)
+		ax3 = figure3.add_subplot(111)
+		canvas3 = FigureCanvasTkAgg(figure3,master=self.b4SmoteFrame)
+		canvas3.draw()
+		canvas3.get_tk_widget().place(x=10,y=320)
+		monthlySalary  = monthlySalary[['Monthly_Salary', 'Decision']].groupby('Monthly_Salary').sum()
+		monthlySalary.plot(kind='bar', legend=True, ax=ax3)
+		ax3.set_title('Monthly salary to have the loan accepted')	
+
+		# Count the number of customers by Decision and Employment_Type
+		employVsDecision = DataFrame(self.df3, columns=['Employment_Type','Decision'])
+		
+		figure4 = plt.Figure(figsize=(5,5), dpi=50)
+		ax4 = figure4.add_subplot(111)
+		canvas4 = FigureCanvasTkAgg(figure4,master=self.b4SmoteFrame)
+		canvas4.draw()
+		canvas4.get_tk_widget().place(x=270,y=320)
+		employVsDecision  = employVsDecision[['Employment_Type', 'Decision']].groupby('Decision').sum()
+		employVsDecision.plot(kind='bar', legend=True, ax=ax4)
+		ax4.set_title('Number of customers by Decision and Employment_Type')	
+		
+		# what is the monthly salary that is likely to have the loan accepted?
+		salaryVsDecision = DataFrame(self.df3, columns=['Monthly_Salary','Decision'])
+		
+		figure5 = plt.Figure(figsize=(5,5), dpi=50)
+		ax5 = figure5.add_subplot(111)
+		canvas5 = FigureCanvasTkAgg(figure5,master=self.b4SmoteFrame)
+		canvas5.draw()
+		canvas5.get_tk_widget().place(x=530,y=320)
+		salaryVsDecision  = salaryVsDecision[['Monthly_Salary', 'Decision']].groupby('Decision').sum()
+		salaryVsDecision.plot(kind='bar', legend=True, ax=ax5)
+		ax5.set_title('Number of customers by Decision and Monthly_Salary')	
+		
+		# what is the decision made by the bank the most frequent?
+		decision = DataFrame(self.df2, columns=['Decision'])
+	
+		figure6 = plt.Figure(figsize=(8,10), dpi=50)
+		ax6 = figure6.add_subplot(111)
+		canvas6 = FigureCanvasTkAgg(figure6,master=self.b4SmoteFrame)
+		canvas6.draw()
+		canvas6.get_tk_widget().place(x=790,y=65)
+
+		decision['Decision'].value_counts().plot(kind='bar', legend=True, ax=ax6, color=tuple(["g", "r","b","y","k"]))
+		ax6.set_title('Most frequent decision made by the bank')
+		ax6.set_xlabel('Decision')		
+
 		
 	def runDfSmote(self):
 		self.destroyFrames()
@@ -297,11 +369,11 @@ class LoanPredictor():
 		self.smoteSelected.set(True)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)
-		self.SmoteFrame = tk.Frame(self.window, width=600, height=600)
+		self.SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.SmoteFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.SmoteFrame, bg="pink",width="600",height = "40").grid(row=0,column=0)
+		canvas = tk.Canvas(self.SmoteFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.SmoteFrame, bg="pink", fg="white", text ="EDA (After SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.SmoteFrame, width="600",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
 	
 	# Association Rule Mining
 	def runARM(self):
@@ -315,11 +387,11 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(True)
 		self.kmcSelected.set(False)
-		self.armFrame = tk.Frame(self.window, width=600, height=600)
+		self.armFrame = tk.Frame(self.window, width=1200, height=600)
 		self.armFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.armFrame, bg="pink",width="600",height = "40").grid(row=0,column=0)
+		canvas = tk.Canvas(self.armFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.armFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.armFrame, width="600",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.armFrame, width="1200",height = "600").grid(row=1, column=0)
 
 		
 		self.df4 = self.df3.copy()
@@ -391,11 +463,11 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(True)
-		self.kmcFrame = tk.Frame(self.window, width=600, height=600)
+		self.kmcFrame = tk.Frame(self.window, width=1200, height=600)
 		self.kmcFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.kmcFrame, bg="pink",width="600",height = "40").grid(row=0,column=0)
+		canvas = tk.Canvas(self.kmcFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.kmcFrame, bg="pink", fg="white", text ="K-Mode Clustering", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.kmcFrame, width="600",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.kmcFrame, width="1200",height = "600").grid(row=1, column=0)
 		
 	# Machine Learning Technique(s) Menu
 	# Decision Tree Classifier On Selected in Menu
@@ -410,11 +482,11 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)
-		self.dtFrame = tk.Frame(self.window, width=600, height=600)
+		self.dtFrame = tk.Frame(self.window, width=1200, height=600)
 		self.dtFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.dtFrame, bg="pink",width="600",height = "40").grid(row=0, column=0)
+		canvas = tk.Canvas(self.dtFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.dtFrame, bg="pink", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.dtFrame, width="600",height = "600").grid(row=1, column=0)		
+		emptyCanvas = tk.Canvas(self.dtFrame, width="1200",height = "600").grid(row=1, column=0)		
 		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=230,y=250, height=50, width=150)
 	# K-Nearest Neighbour On Selected in Menu	
 	def runKNN(self):
@@ -428,12 +500,12 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)
-		self.knnFrame = tk.Frame(self.window, width=600, height=600)
+		self.knnFrame = tk.Frame(self.window, width=1200, height=600)
 		self.knnFrame.place(x=0,y=0)
 		self.knnValue = IntVar()	
-		canvas = tk.Canvas(self.knnFrame, bg="pink",width="600",height = "40").grid(row=0, column=0)
+		canvas = tk.Canvas(self.knnFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.knnFrame, bg="pink", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.knnFrame, width="600",height = "600").grid(row=1, column=0)	
+		emptyCanvas = tk.Canvas(self.knnFrame, width="1200",height = "600").grid(row=1, column=0)	
 		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=250,y=210)		
 		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=230,y=250, height=50, width=150)
 	# Naive Bayes On Selected in Menu
@@ -448,11 +520,11 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)		
-		self.nbFrame = tk.Frame(self.window, width=600, height=600)
+		self.nbFrame = tk.Frame(self.window, width=1200, height=600)
 		self.nbFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.nbFrame, bg="pink",width="600",height = "40").grid(row=0, column=0)
+		canvas = tk.Canvas(self.nbFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.nbFrame, bg="pink", fg="white", text ="Naive Bayes", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.nbFrame, width="600",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.nbFrame, width="1200",height = "600").grid(row=1, column=0)
 		nbButton = Button(self.nbFrame, text ="Generate Naive Bayes", command=self.generateNB).place(x=230,y=250, height=50, width=150)
 	# SVM On Selected in Menu
 	def runSVM(self):
@@ -466,11 +538,11 @@ class LoanPredictor():
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
 		self.kmcSelected.set(False)
-		self.svmFrame = tk.Frame(self.window, width=600, height=600)
+		self.svmFrame = tk.Frame(self.window, width=1200, height=600)
 		self.svmFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.svmFrame, bg="pink",width="600",height = "40").grid(row=0, column=0)
+		canvas = tk.Canvas(self.svmFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.svmFrame, bg="pink", fg="white", text ="Support Vector Machine", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.svmFrame, width="600",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.svmFrame, width="1200",height = "600").grid(row=1, column=0)
 		svmButton = Button(self.svmFrame, text ="Generate SVM", command=self.generateSVM).place(x=230,y=250, height=50, width=150)
 	# Destroy Existing Frames when new frame is open
 	def destroyFrames(self):
