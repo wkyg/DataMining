@@ -253,6 +253,9 @@ class LoanPredictor():
 		# Machine Learning Techiniques
 		# Support Vector Machine (SVM)
 		self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
+		
+		self.dictionary1 = defaultdict(LabelEncoder)
+		self.dfSmote1 = self.dfSmote.apply(lambda x: self.dictionary1[x.name].fit_transform(x))
 	
 	# Visualizing Comparison Charts from Exploratory Data Analysis (Before SMOTE and after SMOTE)
 	def runDf2(self):
@@ -374,7 +377,95 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.SmoteFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.SmoteFrame, bg="pink", fg="white", text ="EDA (After SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
+		
+		# which type of employment is likely to have the loan accepted?
+		typeOfEmploy = DataFrame(self.dfSmote1, columns=['Employment_Type','Decision'])
+		
+		figure = plt.Figure(figsize=(5,5), dpi=50)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.SmoteFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=10,y=60)
+		typeOfEmploy['Employment_Type'].value_counts().plot(kind='bar', legend=True, ax=ax)
+		ax.set_title('Type of employment to have the loan accepted')
+		ax.legend(["Employer", "Self-Employed", "Government", "Employee", "Fresh Graduate"])
 	
+		# which type of credit card user is likely to have the loan accepted?
+		typeOfCard = DataFrame(self.dfSmote1, columns=['Credit_Card_types','Decision'])
+		
+		figure1 = plt.Figure(figsize=(5,5), dpi=50)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.SmoteFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=270,y=60)
+		typeOfCard = typeOfCard[['Credit_Card_types', 'Decision']].groupby('Credit_Card_types').sum()
+		typeOfCard.plot(kind='bar', legend=True, ax=ax1)
+		ax1.set_title('Type of credit card user to have the loan accepted')	
+
+		# which type of properties is likely to have the loan accepted?
+		typeOfProperty = DataFrame(self.dfSmote1, columns=['Property_Type','Decision'])
+		
+		figure2 = plt.Figure(figsize=(5,5), dpi=50)
+		ax2 = figure2.add_subplot(111)
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.SmoteFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=530,y=60)
+		typeOfProperty = typeOfProperty[['Property_Type', 'Decision']].groupby('Property_Type').sum()
+		typeOfProperty.plot(kind='bar', legend=True, ax=ax2)
+		ax2.set_title('Type of properties to have the loan accepted')		
+		
+		# what is the monthly salary that is likely to have the loan accepted?
+		monthlySalary = DataFrame(self.dfSmote1, columns=['Monthly_Salary','Decision'])
+		
+		figure3 = plt.Figure(figsize=(5,5), dpi=50)
+		ax3 = figure3.add_subplot(111)
+		canvas3 = FigureCanvasTkAgg(figure3,master=self.SmoteFrame)
+		canvas3.draw()
+		canvas3.get_tk_widget().place(x=10,y=320)
+		monthlySalary  = monthlySalary[['Monthly_Salary', 'Decision']].groupby('Monthly_Salary').sum()
+		monthlySalary.plot(kind='bar', legend=True, ax=ax3)
+		ax3.set_title('Monthly salary to have the loan accepted')	
+
+		# Count the number of customers by Decision and Employment_Type
+		employVsDecision = DataFrame(self.dfSmote1, columns=['Employment_Type','Decision'])
+		
+		figure4 = plt.Figure(figsize=(5,5), dpi=50)
+		ax4 = figure4.add_subplot(111)
+		canvas4 = FigureCanvasTkAgg(figure4,master=self.SmoteFrame)
+		canvas4.draw()
+		canvas4.get_tk_widget().place(x=270,y=320)
+		employVsDecision  = employVsDecision[['Employment_Type', 'Decision']].groupby('Decision').sum()
+		employVsDecision.plot(kind='bar', legend=True, ax=ax4)
+		ax4.set_title('Number of customers by Decision and Employment_Type')	
+		
+		# what is the monthly salary that is likely to have the loan accepted?
+		salaryVsDecision = DataFrame(self.dfSmote1, columns=['Monthly_Salary','Decision'])
+		
+		figure5 = plt.Figure(figsize=(5,5), dpi=50)
+		ax5 = figure5.add_subplot(111)
+		canvas5 = FigureCanvasTkAgg(figure5,master=self.SmoteFrame)
+		canvas5.draw()
+		canvas5.get_tk_widget().place(x=530,y=320)
+		salaryVsDecision  = salaryVsDecision[['Monthly_Salary', 'Decision']].groupby('Decision').sum()
+		salaryVsDecision.plot(kind='bar', legend=True, ax=ax5)
+		ax5.set_title('Number of customers by Decision and Monthly_Salary')	
+		
+		# what is the decision made by the bank the most frequent?
+		decision = DataFrame(self.dfSmote1, columns=['Decision'])
+	
+		figure6 = plt.Figure(figsize=(8,10), dpi=50)
+		ax6 = figure6.add_subplot(111)
+		canvas6 = FigureCanvasTkAgg(figure6,master=self.SmoteFrame)
+		canvas6.draw()
+		canvas6.get_tk_widget().place(x=790,y=65)
+
+		decision['Decision'].value_counts().plot(kind='bar', legend=True, ax=ax6, color=tuple(["g", "r","b","y","k"]))
+		ax6.set_title('Most frequent decision made by the bank')
+		ax6.set_xlabel('Decision')
+		ax6.legend(["Reject", "Accept"])
+		#ax6.plot(x='Decision', rot=0, title='', figsize=(15,10), fontsize=12)
+		#ax6.set_index('Decision').plot.bar(rot=0, title='Most frequent decision made by the bank', figsize=(15,10), fontsize=12)
+		
 	# Association Rule Mining
 	def runARM(self):
 		self.destroyFrames()
