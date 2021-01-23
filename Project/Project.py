@@ -26,6 +26,7 @@ from sklearn.feature_selection import RFECV
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn import metrics
+#from mlxtend.preprocessing import OnehotTransactions
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 from sklearn.neighbors import KNeighborsClassifier
@@ -47,6 +48,7 @@ class LoanPredictor():
 		self.b4SmoteFrame = Frame()
 		self.smoteFrame = Frame()
 		self.armFrame = Frame()
+		self.genArmFrame = Frame()
 		self.kmcFrame = Frame()
 		self.employmentType = ''
 		self.propertyType =''
@@ -72,6 +74,7 @@ class LoanPredictor():
 		self.window.config(menu=menubar)
 		
 		self.armSelected = BooleanVar()
+		self.genArmSelected = BooleanVar()
 		menubar.add_radiobutton(label = "Association Rule Mining", variable = self.armSelected, value=True, command=self.runARM)
 		
 		visualMenu = tk.Menu(menubar, tearoff = 0)
@@ -268,6 +271,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(True)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.b4SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.b4SmoteFrame.place(x=0,y=0)
@@ -371,6 +375,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(True)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.SmoteFrame.place(x=0,y=0)
@@ -477,6 +482,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(True)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.armFrame = tk.Frame(self.window, width=1200, height=600)
 		self.armFrame.place(x=0,y=0)
@@ -484,9 +490,8 @@ class LoanPredictor():
 		labelMain = tk.Label(self.armFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.armFrame, width="1200",height = "600").grid(row=1, column=0)
 
-		
 		self.df4 = self.df3.copy()
-		self.df4.drop(axis= 1, inplace = True, columns = ['Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
+		self.df4.drop(axis= 1, inplace = True, columns = ['Decision','Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
 		self.df4 = self.df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		self.minSuppValue = DoubleVar()
@@ -505,23 +510,112 @@ class LoanPredictor():
 		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=10,y=250)
 		maxConsLabel = Label(self.armFrame, text='Choose maximum number of consequent').place(x=10,y=290)			
 		maxcons = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxConsValue).place(x=10,y=310)
-		generateBtn = Button(self.armFrame, text="Generate Rules", command=self.generateARM).place(x=230,y=350, height=50, width=150)
+		generateBtn = Button(self.armFrame, text="Generate Rules", command=self.generateARM).place(x=550,y=500, height=50, width=150)
 		
 	def generateARM(self):
+		self.destroyFrames()
+		self.mlt1Selected.set(False)
+		self.mlt2Selected.set(False)
+		self.mlt3Selected.set(False)
+		self.mlt4Selected.set(False)
+		self.pmSelected.set(False)
+		self.b4SmoteSelected.set(False)
+		self.smoteSelected.set(False)
+		self.armSelected.set(False)
+		self.genArmSelected.set(True)
+		self.kmcSelected.set(False)
+		self.genArmFrame = tk.Frame(self.window, width=1200, height=600)
+		self.genArmFrame.place(x=0,y=0)
+		canvas = tk.Canvas(self.genArmFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.genArmFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		emptyCanvas = tk.Canvas(self.genArmFrame, width="1200",height = "600").grid(row=1, column=0)
+		resetBtn = Button(self.genArmFrame, text="Reset", command=self.runARM).place(x=230,y=350, height=50, width=150)
+		
+		
+		basketEmployer = (self.df3[self.df3['Employment_Type'] =="Employer"] 
+          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
+          .sum().unstack().reset_index().fillna(0) 
+          .set_index('Employment_Type')
+		  ) 
+		basketSelfEmp = (self.df3[self.df3['Employment_Type'] =="Self-Employed"] 
+          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
+          .sum().unstack().reset_index().fillna(0) 
+          .set_index('Employment_Type')
+		  ) 
+		basketGov = (self.df3[self.df3['Employment_Type'] =="Government"] 
+          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
+          .sum().unstack().reset_index().fillna(0) 
+          .set_index('Employment_Type')
+		  ) 
+		basketEmployee = (self.df3[self.df3['Employment_Type'] =="Employee"] 
+          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
+          .sum().unstack().reset_index().fillna(0) 
+          .set_index('Employment_Type')
+		  ) 		  
+		basketFreshGrad = (self.df3[self.df3['Employment_Type'] =="Fresh Graduate"] 
+          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
+          .sum().unstack().reset_index().fillna(0) 
+          .set_index('Employment_Type')
+		  ) 
+		 
+		# Defining the hot encoding function to make the data suitable for the concerned libraries
+		
+		# Encoding the datasets 
+		basket_encoded = basketEmployer.applymap(self.hot_encode) 
+		basketEmployer = basket_encoded 
+		print (basketEmployer)
+		print ("yeet")
+		  
+		basket_encoded = basketSelfEmp.applymap(self.hot_encode) 
+		basketSelfEmp = basket_encoded 
+		  
+		basket_encoded = basketGov.applymap(self.hot_encode) 
+		basketGov = basket_encoded 
+		  
+		basket_encoded = basketEmployee.applymap(self.hot_encode) 
+		basketEmployee = basket_encoded 		
+		
+		basket_encoded = basketFreshGrad.applymap(self.hot_encode) 
+		basketFreshGrad = basket_encoded
+		
 		records = []
 		for i in range(0, 2350):
-			records.append([str(self.df4.values[i,j]) for j in range(0, 5)])
-			
-		association_rules = apriori(records, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get(), min_length=2)
-		'''
-		rules = association_rules(records, metric="lift", min_threshold=self.minLiftValue.get())
-		rules["antecedent_len"] = rules["antecedents"].apply(lambda x: len(x))
-		rules["consequent_len"] = rules["consequents"].apply(lambda x: len(x))
-		print(rules[(rules['confidence'] >= self.minConfValue.get()) & (rules['antecedent_len'] <= self.maxAnteValue.get()) & (rules['consequent_len'] <= self.maxConsValue.get())])
-		'''
-		association_rules_list = list(association_rules)
+			records.append([str(self.df4.values[i,j]) for j in range(0, 4)])
 		
-		print(len(association_rules_list))
+		print (records)
+		association_rules = apriori(records, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get(), min_length=2)
+		
+		# Building the model 
+		frq_items = apriori(basketEmployer, min_support = 0.05, use_colnames = True) 
+		print (frq_items)
+		print ("123")
+		  
+		# Collecting the inferred rules in a dataframe 
+		#rules = association_rules(frq_items, metric ="lift", min_threshold = 1) 
+		#print(rules.head()) 
+		
+		association_rules_list = list(association_rules)
+		labelRules = tk.Label(self.genArmFrame, text = "Total Rules Generated: " + str(len(association_rules_list)), font=('Helvetica', 15, 'bold')).place(x=100,y=100)
+		labelMinSupp = tk.Label(self.genArmFrame, text = "Minimum Support Value: " + str(self.minSuppValue.get()), font=('Helvetica', 12)).place(x=100,y=130)
+		labelMinConf = tk.Label(self.genArmFrame, text = "Minimum Confidence Value: " + str(self.minConfValue.get()), font=('Helvetica', 12)).place(x=100,y=150)	
+		labelMinLift = tk.Label(self.genArmFrame, text = "Minimum Lift Value: " + str(self.minLiftValue.get()), font=('Helvetica', 12)).place(x=100,y=170)	
+		labelMaxAnte = tk.Label(self.genArmFrame, text = "Maximum Antecedent Value: " + str(self.maxAnteValue.get()), font=('Helvetica', 12)).place(x=100,y=190)	
+		labelMaxCons = tk.Label(self.genArmFrame, text = "Maximum Consequent Value: " + str(self.maxConsValue.get()), font=('Helvetica', 12)).place(x=100,y=210)	
+		labelTop10Rules = tk.Label(self.genArmFrame, text = "Top 10 Rules", font=('Helvetica', 15, 'bold')).place(x=500,y=50)	
+		'''
+		support=DataFrame(rules, columns=['support'])
+		confidence=DataFrame(rules, columns=['confidence'])
+		
+		for i in range (len(support)):
+		   support[i] = support[i] + 0.0025 * (random.randint(1,10) - 5) 
+		   confidence[i] = confidence[i] + 0.0025 * (random.randint(1,10) - 5)
+		 
+		plt.scatter(support, confidence,   alpha=0.5, marker="*")
+		plt.xlabel('support')
+		plt.ylabel('confidence') 
+		plt.show()
+		'''
+		#print(len(association_rules_list))
 		
 		for item in association_rules_list:
 
@@ -539,10 +633,15 @@ class LoanPredictor():
 
 			print("Confidence: " + str(item[2][0][2]))
 			print("Lift: " + str(item[2][0][3]))
+			print("Decision by the Bank: " + items[-1])
 			print("=====================================")
+	
+	def hot_encode(self,x): 
+		if(x<= 0): 
+			return 0
+		if(x>= 1): 
+			return 1
 			
-	
-	
 	def runkmc(self):
 		self.destroyFrames()
 		self.mlt1Selected.set(False)
@@ -553,6 +652,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(True)
 		self.kmcFrame = tk.Frame(self.window, width=1200, height=600)
 		self.kmcFrame.place(x=0,y=0)
@@ -572,6 +672,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.dtFrame = tk.Frame(self.window, width=1200, height=600)
 		self.dtFrame.place(x=0,y=0)
@@ -590,6 +691,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.knnFrame = tk.Frame(self.window, width=1200, height=600)
 		self.knnFrame.place(x=0,y=0)
@@ -610,6 +712,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)		
 		self.nbFrame = tk.Frame(self.window, width=1200, height=600)
 		self.nbFrame.place(x=0,y=0)
@@ -628,6 +731,7 @@ class LoanPredictor():
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
 		self.armSelected.set(False)
+		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.svmFrame = tk.Frame(self.window, width=1200, height=600)
 		self.svmFrame.place(x=0,y=0)
@@ -659,6 +763,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()				
@@ -684,6 +791,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
@@ -709,6 +819,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()		
@@ -734,6 +847,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
@@ -759,6 +875,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
@@ -784,6 +903,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
@@ -809,6 +931,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
@@ -834,9 +959,40 @@ class LoanPredictor():
 			for widget in self.smoteFrame.winfo_children():
 				widget.destroy()
 			self.smoteFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
-			self.kmcFrame.pack_forget()			
+			self.kmcFrame.pack_forget()	
+		if self.genArmSelected == True:
+			for widget in self.dtFrame.winfo_children():
+			   widget.destroy()
+			self.dtFrame.pack_forget()   
+			for widget in self.knnFrame.winfo_children():
+			   widget.destroy()
+			self.knnFrame.pack_forget() 
+			for widget in self.nbFrame.winfo_children():
+			   widget.destroy()
+			self.nbFrame.pack_forget() 
+			for widget in self.svmFrame.winfo_children():
+				widget.destroy()
+			self.svmFrame.pack_forget()
+			for widget in self.predictionFrame.winfo_children():
+				widget.destroy()
+			self.predictionFrame.pack_forget()	
+			for widget in self.b4SmoteFrame.winfo_children():
+				widget.destroy()
+			self.b4SmoteFrame.pack_forget()	
+			for widget in self.smoteFrame.winfo_children():
+				widget.destroy()
+			self.smoteFrame.pack_forget()
+			for widget in self.armFrame.winfo_children():
+				widget.destroy()
+			self.armFrame.pack_forget()			
+			for widget in self.kmcFrame.winfo_children():
+				widget.destroy()
+			self.kmcFrame.pack_forget()				
 		if self.kmcSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -862,6 +1018,9 @@ class LoanPredictor():
 			for widget in self.armFrame.winfo_children():
 				widget.destroy()
 			self.armFrame.pack_forget()	
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
 			
 	# Help Menu
 	def aboutUs(self):
