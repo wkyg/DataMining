@@ -719,7 +719,39 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.nbFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.nbFrame, bg="pink", fg="white", text ="Naive Bayes", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.nbFrame, width="1200",height = "600").grid(row=1, column=0)
-		nbButton = Button(self.nbFrame, text ="Generate Naive Bayes", command=self.generateNB).place(x=230,y=250, height=50, width=150)
+		nbButton = Button(self.nbFrame, text ="Generate Naive Bayes", command=self.generateNB).place(x=530,y=50, height=50, width=150)
+	
+	# Generate NB Accordingly
+	def generateNB(self):
+		nb = GaussianNB()
+		nb.fit(self.X_train, self.y_train)
+		self.y_pred = nb.predict(self.X_test)
+		
+		f1_nb = metrics.f1_score(self.y_test, self.y_pred)
+		
+		bgCanvas = tk.Canvas(self.nbFrame, bg="white", width="340",height = "300").place(x=100,y=130)
+		labelTitle = tk.Label(self.nbFrame, bg="white", text ="Performance of Naive Bayes", font=('Helvetica', 15, 'bold')).place(x=140,y=240)
+		labelAccuracy = tk.Label(self.nbFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=270)
+		labelPrecision = tk.Label(self.nbFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=290)
+		labelRecall = tk.Label(self.nbFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=310)	
+		labelF1 = tk.Label(self.nbFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=330)
+		# nid scatter plot
+		# https://jakevdp.github.io/PythonDataScienceHandbook/05.05-naive-bayes.html
+		
+		X, y = make_blobs(100, 2, centers=2, random_state=2, cluster_std=1.5)
+		plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu');
+		figure5 = plt.Figure(figsize=(7,4), dpi=90)
+		#self.a.cla()
+		x,v = self.read_inputs()
+		self.figure5.scatter(x, v, color='red')
+		self.figure5.set_title ("Scatter Plot)", fontsize=16)
+		self.figure5.set_ylabel("Y", fontsize=14)
+		self.figure5.set_xlabel("X", fontsize=14)
+		canvas5 = FigureCanvasTkAgg(figure5,master=self.nbFrame)
+		canvas5.draw()
+		canvas5.get_tk_widget().place(x=500,y=130)
+			
+		
 	# SVM On Selected in Menu
 	def runSVM(self):
 		self.destroyFrames()
@@ -1093,18 +1125,7 @@ class LoanPredictor():
 		plt.ylabel('accuracy')
 		plt.title('Accuracy by n_neigbors')
 		plt.scatter(k_range, scores)
-		plt.plot(k_range, scores, color='green', linestyle='dashed', linewidth=1, markersize=5)
-	# Generate NB Accordingly
-	def generateNB(self):
-		nb = GaussianNB()
-		nb.fit(self.X_train, self.y_train)
-		self.y_pred = nb.predict(self.X_test)
-		
-		f1_nb = metrics.f1_score(self.y_test, self.y_pred)
-		
-		f = "Accuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-		messagebox.showinfo("Naive Bayes",f)
-		
+		plt.plot(k_range, scores, color='green', linestyle='dashed', linewidth=1, markersize=5)		
 	# Generate SVM Accordingly
 	def generateSVM(self):
 		kernels = ['linear', 'rbf', 'poly']
