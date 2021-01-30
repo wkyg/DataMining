@@ -26,7 +26,11 @@ from sklearn.feature_selection import RFECV
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn import metrics
-#from mlxtend.preprocessing import OnehotTransactions
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 from sklearn.neighbors import KNeighborsClassifier
@@ -729,29 +733,60 @@ class LoanPredictor():
 		
 		f1_nb = metrics.f1_score(self.y_test, self.y_pred)
 		
-		bgCanvas = tk.Canvas(self.nbFrame, bg="white", width="340",height = "300").place(x=100,y=130)
-		labelTitle = tk.Label(self.nbFrame, bg="white", text ="Performance of Naive Bayes", font=('Helvetica', 15, 'bold')).place(x=140,y=240)
-		labelAccuracy = tk.Label(self.nbFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=270)
-		labelPrecision = tk.Label(self.nbFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=290)
-		labelRecall = tk.Label(self.nbFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=310)	
-		labelF1 = tk.Label(self.nbFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=330)
-		# nid scatter plot
-		# https://jakevdp.github.io/PythonDataScienceHandbook/05.05-naive-bayes.html
+		bgCanvas = tk.Canvas(self.nbFrame, bg="white", width="400",height = "360").place(x=20,y=130)
+		labelTitle = tk.Label(self.nbFrame, bg="white", text ="Performance of Naive Bayes", font=('Helvetica', 15, 'bold')).place(x=60,y=160)
+		labelAccuracy = tk.Label(self.nbFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=190)
+		labelPrecision = tk.Label(self.nbFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelRecall = tk.Label(self.nbFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)	
+		labelF1 = tk.Label(self.nbFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)
 		
-		X, y = make_blobs(100, 2, centers=2, random_state=2, cluster_std=1.5)
-		plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu');
-		figure5 = plt.Figure(figsize=(7,4), dpi=90)
-		#self.a.cla()
-		x,v = self.read_inputs()
-		self.figure5.scatter(x, v, color='red')
-		self.figure5.set_title ("Scatter Plot)", fontsize=16)
-		self.figure5.set_ylabel("Y", fontsize=14)
-		self.figure5.set_xlabel("X", fontsize=14)
-		canvas5 = FigureCanvasTkAgg(figure5,master=self.nbFrame)
-		canvas5.draw()
-		canvas5.get_tk_widget().place(x=500,y=130)
-			
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.nbFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=280)
+		labelTN = tk.Label(self.nbFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=310)
+		labelFP = tk.Label(self.nbFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFN = tk.Label(self.nbFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelTP = tk.Label(self.nbFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
 		
+		prob_NB = nb.predict_proba(self.X_test)
+		prob_NB= prob_NB[:, 1]
+
+		auc_NB= roc_auc_score(self.y_test, prob_NB)
+		labelTitle3 = tk.Label(self.nbFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.nbFrame, bg="white", text ='AUC: %.2f' % auc_NB, font=('Helvetica', 12)).place(x=60,y=430)		
+		
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.nbFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=130)
+		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, prob_NB)
+		roc_auc = metrics.auc(fpr_NB, tpr_NB)
+		ax.plot(fpr_NB, tpr_NB, 'b', label = 'NB')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.nbFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=130)
+		prec_NB, rec_NB, threshold_NB = precision_recall_curve(self.y_test, prob_NB)
+		ax1.plot(prec_NB, rec_NB, color='orange', label='NB') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+					
 	# SVM On Selected in Menu
 	def runSVM(self):
 		self.destroyFrames()
