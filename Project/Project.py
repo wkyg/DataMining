@@ -683,7 +683,69 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.dtFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.dtFrame, bg="pink", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.dtFrame, width="1200",height = "600").grid(row=1, column=0)		
-		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=230,y=250, height=50, width=150)
+		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=530,y=50, height=50, width=150)
+		
+	# Generate DT Accordingly
+	def generateDT(self):
+		model_DT = DecisionTreeClassifier(max_depth=3)
+		model_DT.fit(self.X_train, self.y_train)
+		self.y_pred = model_DT.predict(self.X_test)
+		
+		f1_dt = metrics.f1_score(self.y_test, self.y_pred)		
+		
+		bgCanvas = tk.Canvas(self.dtFrame, bg="white", width="400",height = "360").place(x=20,y=130)
+		labelTitle = tk.Label(self.dtFrame, bg="white", text ="Performance of Decision Tree", font=('Helvetica', 15, 'bold')).place(x=60,y=160)
+		labelAccuracy = tk.Label(self.dtFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=190)
+		labelPrecision = tk.Label(self.dtFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelRecall = tk.Label(self.dtFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)	
+		labelF1 = tk.Label(self.dtFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)
+		
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.dtFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=280)
+		labelTN = tk.Label(self.dtFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=310)
+		labelFP = tk.Label(self.dtFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFN = tk.Label(self.dtFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelTP = tk.Label(self.dtFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
+		
+		prob_DT = model_DT.predict_proba(self.X_test)
+		prob_DT = prob_DT[:, 1]
+
+		auc_DT= roc_auc_score(self.y_test, prob_DT)
+		labelTitle3 = tk.Label(self.dtFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.dtFrame, bg="white", text ='AUC: %.2f' % auc_DT, font=('Helvetica', 12)).place(x=60,y=430)		
+		
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.dtFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=130)
+		fpr_DT, tpr_DT, thresholds_DT = roc_curve(self.y_test, prob_DT)
+		ax.plot(fpr_DT, tpr_DT, 'b', label = 'DT')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.dtFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=130)
+		prec_DT, rec_DT, threshold_DT = precision_recall_curve(self.y_test, prob_DT)
+		ax1.plot(prec_DT, rec_DT, color='orange', label='DT') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
 	# K-Nearest Neighbour On Selected in Menu	
 	def runKNN(self):
 		self.destroyFrames()
@@ -760,7 +822,6 @@ class LoanPredictor():
 		canvas.draw()
 		canvas.get_tk_widget().place(x=430,y=130)
 		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, prob_NB)
-		roc_auc = metrics.auc(fpr_NB, tpr_NB)
 		ax.plot(fpr_NB, tpr_NB, 'b', label = 'NB')
 		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
 		ax.set_xlabel('False Positive Rate')
@@ -1128,16 +1189,7 @@ class LoanPredictor():
 			   self.propertyType.get() + "\n" +		
 			   self.loanAmount.get() + "\n" +
 			   self.mthSalary.get() + "\n")
-	
-	# Generate DT Accordingly
-	def generateDT(self):
-		dt = DecisionTreeClassifier(random_state=1)
-		dt = dt.fit(self.X_train, self.y_train)
-		self.y_pred = dt.predict(self.X_test)
-		
-		f1_dt = metrics.f1_score(self.y_test, self.y_pred)		
-		f = "Accuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-		messagebox.showinfo("Decision Tree Classifier",f)
+
 	# Generate KNN Accordingly
 	def generateKNN(self):
 		k = self.knnValue.get()
