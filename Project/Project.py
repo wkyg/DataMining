@@ -34,6 +34,9 @@ from sklearn.metrics import precision_recall_curve
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn import datasets, neighbors
+from matplotlib.colors import ListedColormap
+from mlxtend.plotting import plot_decision_regions
 from kmodes.kmodes import KModes
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
@@ -765,8 +768,74 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.knnFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.knnFrame, bg="pink", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.knnFrame, width="1200",height = "600").grid(row=1, column=0)	
-		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=250,y=210)		
-		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=230,y=250, height=50, width=150)
+		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=550,y=50)		
+		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=530,y=90, height=50, width=150)
+		
+	# Generate KNN Accordingly
+	def generateKNN(self):
+		k = self.knnValue.get()
+		k_range = range(1,10)
+		scores = []
+		scores1 = []
+
+		knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
+		knn.fit(self.X_train, self.y_train)
+		scores.append(knn.score(self.X_test, self.y_test))
+		
+		self.y_pred = knn.predict(self.X_test)
+		f1_knn = metrics.f1_score(self.y_test, self.y_pred)
+		
+		prob_KNN = knn.predict_proba(self.X_test)
+		prob_KNN = prob_KNN[:, 1]
+		
+		bgCanvas = tk.Canvas(self.knnFrame, bg="white", width="400",height = "360").place(x=20,y=150)
+		labelTitle = tk.Label(self.knnFrame, bg="white", text ="Performance of K-Nearest Neighbor", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
+		labelAccuracy = tk.Label(self.knnFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelPrecision = tk.Label(self.knnFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)
+		labelRecall = tk.Label(self.knnFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)	
+		labelF1 = tk.Label(self.knnFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=270)
+		
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.knnFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=300)
+		labelTN = tk.Label(self.knnFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFP = tk.Label(self.knnFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelFN = tk.Label(self.knnFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=370)
+		labelTP = tk.Label(self.knnFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=390)
+
+		auc_KNN= roc_auc_score(self.y_test, prob_KNN)
+		labelTitle3 = tk.Label(self.knnFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=420)		
+		labelAUC = tk.Label(self.knnFrame, bg="white", text ='AUC: %.2f' % auc_KNN, font=('Helvetica', 12)).place(x=60,y=450)	
+
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.knnFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=150)
+		fpr_KNN, tpr_KNN, thresholds_KNN = roc_curve(self.y_test, prob_KNN)
+		ax.plot(fpr_KNN, tpr_KNN, 'b', label = 'KNN')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		
+		for k in k_range:
+			knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
+			knn.fit(self.X_train, self.y_train)
+			scores1.append(knn.score(self.X_test, self.y_test))
+
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=150)
+		ax1.scatter(k_range, scores1, label="k")
+		ax1.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
+		ax1.set_xlabel('k')
+		ax1.set_ylabel('Accuracy')
+		ax1.set_title('Accuracy by n_neigbors')
+		ax1.legend(loc = 'upper right')
+
 	# Naive Bayes On Selected in Menu
 	def runNB(self):
 		self.destroyFrames()
@@ -1190,29 +1259,6 @@ class LoanPredictor():
 			   self.loanAmount.get() + "\n" +
 			   self.mthSalary.get() + "\n")
 
-	# Generate KNN Accordingly
-	def generateKNN(self):
-		k = self.knnValue.get()
-		k_range = range(1,10)
-		scores = []
-
-		print("Number of K: " + str(k))
-		knn = KNeighborsClassifier(n_neighbors = k, weights='uniform')
-		knn.fit(self.X_train, self.y_train)
-		scores.append(knn.score(self.X_test, self.y_test))
-		self.y_pred = knn.predict(self.X_test)
-		
-		f1_knn = metrics.f1_score(self.y_test, self.y_pred)
-			
-		f = "No. of K    :" + str(k) + "\nAccuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-		messagebox.showinfo("K-Nearest Neighbour",f)
-		
-		plt.figure()
-		plt.xlabel('k')
-		plt.ylabel('accuracy')
-		plt.title('Accuracy by n_neigbors')
-		plt.scatter(k_range, scores)
-		plt.plot(k_range, scores, color='green', linestyle='dashed', linewidth=1, markersize=5)		
 	# Generate SVM Accordingly
 	def generateSVM(self):
 		kernels = ['linear', 'rbf', 'poly']
