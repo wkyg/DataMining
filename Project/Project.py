@@ -1379,8 +1379,8 @@ class LoanPredictor():
 
 	def howToUse(self):
 			pass
-			messagebox.showinfo("How to use","1. Choose the machine learning technique\n2. Choose the Employment type followed by Type of credit cards, type of properties, "
-											 "loan amount and monthly salary\n3. Select the machine learning technique's parameters\n 4. Click predict now")
+			messagebox.showinfo("How to use","1. Choose the machine learning technique\n2. Choose the Employment type followed by Type of credit cards, type of properties and "
+											 "and monthly salary\n3. Select the machine learning technique's parameters\n 4. Click predict now")
 
 	# Reset Button On Clicked
 	def resetButtonOnClicked(self):
