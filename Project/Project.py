@@ -25,11 +25,19 @@ from boruta import BorutaPy
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import train_test_split
 from sklearn import svm
+from sklearn.svm import SVC 
 from sklearn import metrics
-#from mlxtend.preprocessing import OnehotTransactions
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn import datasets, neighbors
+from matplotlib.colors import ListedColormap
+from mlxtend.plotting import plot_decision_regions
 from kmodes.kmodes import KModes
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
@@ -44,6 +52,7 @@ class LoanPredictor():
 		self.knnFrame = Frame()
 		self.nbFrame = Frame()
 		self.svmFrame = Frame()
+		self.cmeFrame = Frame()
 		self.predictionFrame = Frame()
 		self.b4SmoteFrame = Frame()
 		self.smoteFrame = Frame()
@@ -55,6 +64,11 @@ class LoanPredictor():
 		self.cardType = ''
 		self.mthSalary = ''
 		self.loanAmount = ''
+		self.f1_dt = ''
+		self.f1_knn = ''
+		self.f1_nb = ''
+		self.f1_svm = ''
+		self.knnValue = IntVar()
 		self.window = window
 		self.window.title("Bank Loan Predictor")
 		self.window.resizable(False, False)
@@ -90,10 +104,12 @@ class LoanPredictor():
 		self.mlt2Selected = BooleanVar()		
 		self.mlt3Selected = BooleanVar()		
 		self.mlt4Selected = BooleanVar()
+		self.mlt5Selected = BooleanVar()		
 		technicMenu.add_radiobutton(label = "Decision Tree Classifier", variable = self.mlt1Selected, value=True, command = self.runDT)	
 		technicMenu.add_radiobutton(label = "K-Nearest Neighbour", variable = self.mlt2Selected, value=True, command = self.runKNN)
 		technicMenu.add_radiobutton(label = "Naive Bayes", variable = self.mlt3Selected, value=True, command = self.runNB)
 		technicMenu.add_radiobutton(label = "SVM Kernel", variable = self.mlt4Selected, value=True, command = self.runSVM)
+		technicMenu.add_radiobutton(label = "Classification Model Evaluation", variable = self.mlt5Selected, value=True, command = self.runCME)		
 		menubar.add_cascade(label = "Machine Learning Technique(s)", menu = technicMenu)	
 		
 		clusterMenu = tk.Menu(menubar, tearoff = 0)
@@ -122,46 +138,38 @@ class LoanPredictor():
 		emptyCanvas = tk.Canvas(self.predictionFrame, width="1200",height = "600").grid(row=1, column=0)	
 		# Create Sub-Categories
 		# SubCategory1 = Employment_Type
-		labelSubCat1 = Label(self.predictionFrame, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=10,y=50)
+		labelSubCat1 = Label(self.predictionFrame, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=210,y=90)
 		self.employmentType = StringVar()
-		empType1 = Radiobutton(self.predictionFrame, text="Employee", variable=self.employmentType, value="Employee",command=self.saveSelectedValues).place(x=10,y=70)
-		empType2 = Radiobutton(self.predictionFrame, text="Employer", variable=self.employmentType, value="Employer",command=self.saveSelectedValues).place(x=10,y=90)
-		empType3 = Radiobutton(self.predictionFrame, text="Fresh Graduate", variable=self.employmentType, value="Fresh Graduate", command=self.saveSelectedValues).place(x=10,y=110)
-		empType4 = Radiobutton(self.predictionFrame, text="Self Employment", variable=self.employmentType, value="Self Employment", command=self.saveSelectedValues).place(x=10,y=130)			
+		empType1 = Radiobutton(self.predictionFrame, text="Employee", variable=self.employmentType, value="Employee",command=self.saveSelectedValues).place(x=210,y=110)
+		empType2 = Radiobutton(self.predictionFrame, text="Employer", variable=self.employmentType, value="Employer",command=self.saveSelectedValues).place(x=210,y=130)
+		empType3 = Radiobutton(self.predictionFrame, text="Fresh Graduate", variable=self.employmentType, value="Fresh Graduate", command=self.saveSelectedValues).place(x=210,y=150)
+		empType4 = Radiobutton(self.predictionFrame, text="Self Employment", variable=self.employmentType, value="Self Employment", command=self.saveSelectedValues).place(x=210,y=170)			
 		
 		# SubCategory2 = Credit_Card_types
-		labelSubCat2 = Label(self.predictionFrame, text ="Type of Credit Cards", font=('Helvetica', 10), justify=LEFT).place(x=10,y=170)
+		labelSubCat2 = Label(self.predictionFrame, text ="Type of Credit Cards", font=('Helvetica', 10), justify=LEFT).place(x=420,y=90)
 		self.cardType = StringVar()
-		cardType1 = Radiobutton(self.predictionFrame, text="Normal", variable=self.cardType, value="Normal",command=self.saveSelectedValues).place(x=10,y=190)
-		cardType2 = Radiobutton(self.predictionFrame, text="Gold", variable=self.cardType, value="Gold",command=self.saveSelectedValues).place(x=10,y=210)
-		cardType3 = Radiobutton(self.predictionFrame, text="Platinum", variable=self.cardType, value="Platinum", command=self.saveSelectedValues).place(x=10,y=230)	
+		cardType1 = Radiobutton(self.predictionFrame, text="Normal", variable=self.cardType, value="Normal",command=self.saveSelectedValues).place(x=420,y=110)
+		cardType2 = Radiobutton(self.predictionFrame, text="Gold", variable=self.cardType, value="Gold",command=self.saveSelectedValues).place(x=420,y=130)
+		cardType3 = Radiobutton(self.predictionFrame, text="Platinum", variable=self.cardType, value="Platinum", command=self.saveSelectedValues).place(x=420,y=150)	
 		
 		# SubCategory3 = Property_Type
-		labelSubCat3 = Label(self.predictionFrame, text ="Type of Properties", font=('Helvetica', 10), justify=LEFT).place(x=10,y=270) 
+		labelSubCat3 = Label(self.predictionFrame, text ="Type of Properties", font=('Helvetica', 10), justify=LEFT).place(x=640,y=90) 
 		self.propertyType = StringVar()
-		propertyType1 = Radiobutton(self.predictionFrame, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=10,y=290)		
-		propertyType2 = Radiobutton(self.predictionFrame, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=10,y=310)
-		propertyType3 = Radiobutton(self.predictionFrame, text="Flat", variable=self.propertyType, value="Flat",command=self.saveSelectedValues).place(x=10,y=330)
-		propertyType4 = Radiobutton(self.predictionFrame, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=10,y=350)
+		propertyType1 = Radiobutton(self.predictionFrame, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=640,y=110)		
+		propertyType2 = Radiobutton(self.predictionFrame, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=640,y=130)
+		propertyType3 = Radiobutton(self.predictionFrame, text="Flat", variable=self.propertyType, value="Flat",command=self.saveSelectedValues).place(x=640,y=150)
+		propertyType4 = Radiobutton(self.predictionFrame, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=640,y=170)
 		
-		# SubCategory4 = Loan_Amount
-		labelSubCat4 = Label(self.predictionFrame, text ="Loan Amount (RM)", font=('Helvetica', 10), justify=LEFT).place(x=350,y=50)
-		self.loanAmount = StringVar()
-		loanAmount1 = Radiobutton(self.predictionFrame, text="100,000 - 300,000", variable=self.loanAmount, value="100,000 - 300,000", command=self.saveSelectedValues).place(x=350,y=70)
-		loanAmount2 = Radiobutton(self.predictionFrame, text="300,000 - 500,000", variable=self.loanAmount, value="300,000 - 500,000", command=self.saveSelectedValues).place(x=350,y=90)
-		loanAmount3 = Radiobutton(self.predictionFrame, text="500,000 - 700,000", variable=self.loanAmount, value="500,000 - 700,000", command=self.saveSelectedValues).place(x=350,y=110)
-		loanAmount4 = Radiobutton(self.predictionFrame, text="700,000 - 900,000", variable=self.loanAmount, value="700,000 - 900,000", command=self.saveSelectedValues).place(x=350,y=130)
-		
-		# SubCategory5 = Monthly_Salary
-		labelSubCat5 = Label(self.predictionFrame, text ="Monthly Salary (RM)", font=('Helvetica', 10), justify=LEFT).place(x=350,y=170)
+		# SubCategory4 = Monthly_Salary
+		labelSubCat4 = Label(self.predictionFrame, text ="Monthly Salary (RM)", font=('Helvetica', 10), justify=LEFT).place(x=860,y=90)
 		self.mthSalary = StringVar()
-		mthSalary1 = Radiobutton(self.predictionFrame, text="<4,000", variable=self.mthSalary, value="<4,000", command=self.saveSelectedValues).place(x=350,y=190)
-		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="4,000 - 7,000", command=self.saveSelectedValues).place(x=350,y=210)
-		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="7,000 - 10,000", command=self.saveSelectedValues).place(x=350,y=230)
-		mthSalary4 = Radiobutton(self.predictionFrame, text="10,000 - 13,000", variable=self.mthSalary, value="10,000 - 13,000", command=self.saveSelectedValues).place(x=350,y=250)	
+		mthSalary1 = Radiobutton(self.predictionFrame, text="<4,000", variable=self.mthSalary, value="<4,000", command=self.saveSelectedValues).place(x=860,y=110)
+		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="4,000 - 7,000", command=self.saveSelectedValues).place(x=860,y=130)
+		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="7,000 - 10,000", command=self.saveSelectedValues).place(x=860,y=150)
+		mthSalary4 = Radiobutton(self.predictionFrame, text="10,000 - 13,000", variable=self.mthSalary, value="10,000 - 13,000", command=self.saveSelectedValues).place(x=860,y=170)	
 		
-		resetBtn = Button(self.predictionFrame, text ="Reset", command=self.resetButtonOnClicked).place(x=200,y=500, height=30, width=100) 	
-		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=300,y=500, height=30, width=100)
+		resetBtn = Button(self.predictionFrame, text ="Reset", command=self.resetButtonOnClicked).place(x=450,y=500, height=50, width=150) 	
+		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=600,y=500, height=50, width=150)
 		
 	def dataPreprocess(self):
 		# Load Data
@@ -267,6 +275,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(True)
 		self.smoteSelected.set(False)
@@ -371,6 +380,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(True)
@@ -478,6 +488,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -648,6 +659,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)		
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -668,6 +680,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -679,7 +692,69 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.dtFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.dtFrame, bg="pink", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.dtFrame, width="1200",height = "600").grid(row=1, column=0)		
-		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=230,y=250, height=50, width=150)
+		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=530,y=50, height=50, width=150)
+		
+	# Generate DT Accordingly
+	def generateDT(self):
+		model_DT = DecisionTreeClassifier(max_depth=3)
+		model_DT.fit(self.X_train, self.y_train)
+		self.y_pred = model_DT.predict(self.X_test)
+		
+		self.f1_dt = metrics.f1_score(self.y_test, self.y_pred)		
+		
+		bgCanvas = tk.Canvas(self.dtFrame, bg="white", width="400",height = "360").place(x=20,y=130)
+		labelTitle = tk.Label(self.dtFrame, bg="white", text ="Performance of Decision Tree", font=('Helvetica', 15, 'bold')).place(x=60,y=160)
+		labelAccuracy = tk.Label(self.dtFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=190)
+		labelPrecision = tk.Label(self.dtFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelRecall = tk.Label(self.dtFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)	
+		labelF1 = tk.Label(self.dtFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)
+		
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.dtFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=280)
+		labelTN = tk.Label(self.dtFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=310)
+		labelFP = tk.Label(self.dtFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFN = tk.Label(self.dtFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelTP = tk.Label(self.dtFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
+		
+		prob_DT = model_DT.predict_proba(self.X_test)
+		prob_DT = prob_DT[:, 1]
+
+		auc_DT= roc_auc_score(self.y_test, prob_DT)
+		labelTitle3 = tk.Label(self.dtFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.dtFrame, bg="white", text ='AUC: %.2f' % auc_DT, font=('Helvetica', 12)).place(x=60,y=430)		
+		
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.dtFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=130)
+		fpr_DT, tpr_DT, thresholds_DT = roc_curve(self.y_test, prob_DT)
+		ax.plot(fpr_DT, tpr_DT, 'b', label = 'DT')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.dtFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=130)
+		prec_DT, rec_DT, threshold_DT = precision_recall_curve(self.y_test, prob_DT)
+		ax1.plot(prec_DT, rec_DT, color='orange', label='DT') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
 	# K-Nearest Neighbour On Selected in Menu	
 	def runKNN(self):
 		self.destroyFrames()
@@ -687,6 +762,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(True)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -694,13 +770,81 @@ class LoanPredictor():
 		self.genArmSelected.set(False)
 		self.kmcSelected.set(False)
 		self.knnFrame = tk.Frame(self.window, width=1200, height=600)
-		self.knnFrame.place(x=0,y=0)
-		self.knnValue = IntVar()	
+		self.knnFrame.place(x=0,y=0)	
 		canvas = tk.Canvas(self.knnFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.knnFrame, bg="pink", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.knnFrame, width="1200",height = "600").grid(row=1, column=0)	
-		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=250,y=210)		
-		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=230,y=250, height=50, width=150)
+		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=550,y=50)		
+		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=530,y=90, height=50, width=150)
+		
+	# Generate KNN Accordingly
+	def generateKNN(self):
+		if self.knnValue.get() == 0:
+			k = 1
+		else:
+			k = self.knnValue.get()
+		k_range = range(1,10)
+		scores = []
+		scores1 = []
+
+		knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
+		knn.fit(self.X_train, self.y_train)
+		scores.append(knn.score(self.X_test, self.y_test))
+		
+		self.y_pred = knn.predict(self.X_test)
+		self.f1_knn = metrics.f1_score(self.y_test, self.y_pred)
+		
+		prob_KNN = knn.predict_proba(self.X_test)
+		prob_KNN = prob_KNN[:, 1]
+		
+		bgCanvas = tk.Canvas(self.knnFrame, bg="white", width="400",height = "360").place(x=20,y=150)
+		labelTitle = tk.Label(self.knnFrame, bg="white", text ="Performance of K-Nearest Neighbor", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
+		labelAccuracy = tk.Label(self.knnFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelPrecision = tk.Label(self.knnFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)
+		labelRecall = tk.Label(self.knnFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)	
+		labelF1 = tk.Label(self.knnFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=270)
+		
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.knnFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=300)
+		labelTN = tk.Label(self.knnFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFP = tk.Label(self.knnFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelFN = tk.Label(self.knnFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=370)
+		labelTP = tk.Label(self.knnFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=390)
+
+		auc_KNN= roc_auc_score(self.y_test, prob_KNN)
+		labelTitle3 = tk.Label(self.knnFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=420)		
+		labelAUC = tk.Label(self.knnFrame, bg="white", text ='AUC: %.2f' % auc_KNN, font=('Helvetica', 12)).place(x=60,y=450)	
+
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.knnFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=150)
+		fpr_KNN, tpr_KNN, thresholds_KNN = roc_curve(self.y_test, prob_KNN)
+		ax.plot(fpr_KNN, tpr_KNN, 'b', label = 'KNN')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		
+		for k in k_range:
+			knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
+			knn.fit(self.X_train, self.y_train)
+			scores1.append(knn.score(self.X_test, self.y_test))
+
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=150)
+		ax1.scatter(k_range, scores1, label="k")
+		ax1.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
+		ax1.set_xlabel('k')
+		ax1.set_ylabel('Accuracy')
+		ax1.set_title('Accuracy by n_neigbors')
+		ax1.legend(loc = 'upper right')
+
 	# Naive Bayes On Selected in Menu
 	def runNB(self):
 		self.destroyFrames()
@@ -708,6 +852,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(True)
 		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -727,31 +872,61 @@ class LoanPredictor():
 		nb.fit(self.X_train, self.y_train)
 		self.y_pred = nb.predict(self.X_test)
 		
-		f1_nb = metrics.f1_score(self.y_test, self.y_pred)
+		self.f1_nb = metrics.f1_score(self.y_test, self.y_pred)
 		
-		bgCanvas = tk.Canvas(self.nbFrame, bg="white", width="340",height = "300").place(x=100,y=130)
-		labelTitle = tk.Label(self.nbFrame, bg="white", text ="Performance of Naive Bayes", font=('Helvetica', 15, 'bold')).place(x=140,y=240)
-		labelAccuracy = tk.Label(self.nbFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=270)
-		labelPrecision = tk.Label(self.nbFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=290)
-		labelRecall = tk.Label(self.nbFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=310)	
-		labelF1 = tk.Label(self.nbFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=140,y=330)
-		# nid scatter plot
-		# https://jakevdp.github.io/PythonDataScienceHandbook/05.05-naive-bayes.html
+		bgCanvas = tk.Canvas(self.nbFrame, bg="white", width="400",height = "360").place(x=20,y=130)
+		labelTitle = tk.Label(self.nbFrame, bg="white", text ="Performance of Naive Bayes", font=('Helvetica', 15, 'bold')).place(x=60,y=160)
+		labelAccuracy = tk.Label(self.nbFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=190)
+		labelPrecision = tk.Label(self.nbFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelRecall = tk.Label(self.nbFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)	
+		labelF1 = tk.Label(self.nbFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)
 		
-		X, y = make_blobs(100, 2, centers=2, random_state=2, cluster_std=1.5)
-		plt.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='RdBu');
-		figure5 = plt.Figure(figsize=(7,4), dpi=90)
-		#self.a.cla()
-		x,v = self.read_inputs()
-		self.figure5.scatter(x, v, color='red')
-		self.figure5.set_title ("Scatter Plot)", fontsize=16)
-		self.figure5.set_ylabel("Y", fontsize=14)
-		self.figure5.set_xlabel("X", fontsize=14)
-		canvas5 = FigureCanvasTkAgg(figure5,master=self.nbFrame)
-		canvas5.draw()
-		canvas5.get_tk_widget().place(x=500,y=130)
-			
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.nbFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=280)
+		labelTN = tk.Label(self.nbFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=310)
+		labelFP = tk.Label(self.nbFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFN = tk.Label(self.nbFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelTP = tk.Label(self.nbFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
 		
+		prob_NB = nb.predict_proba(self.X_test)
+		prob_NB= prob_NB[:, 1]
+
+		auc_NB= roc_auc_score(self.y_test, prob_NB)
+		labelTitle3 = tk.Label(self.nbFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.nbFrame, bg="white", text ='AUC: %.2f' % auc_NB, font=('Helvetica', 12)).place(x=60,y=430)		
+		
+		figure = plt.Figure(figsize=(6,6), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.nbFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=130)
+		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, prob_NB)
+		ax.plot(fpr_NB, tpr_NB, 'b', label = 'NB')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.nbFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=130)
+		prec_NB, rec_NB, threshold_NB = precision_recall_curve(self.y_test, prob_NB)
+		ax1.plot(prec_NB, rec_NB, color='orange', label='NB') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+					
 	# SVM On Selected in Menu
 	def runSVM(self):
 		self.destroyFrames()
@@ -759,6 +934,7 @@ class LoanPredictor():
 		self.mlt2Selected.set(False)
 		self.mlt3Selected.set(False)
 		self.mlt4Selected.set(True)	
+		self.mlt5Selected.set(False)
 		self.pmSelected.set(False)
 		self.b4SmoteSelected.set(False)
 		self.smoteSelected.set(False)
@@ -770,7 +946,89 @@ class LoanPredictor():
 		canvas = tk.Canvas(self.svmFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.svmFrame, bg="pink", fg="white", text ="Support Vector Machine", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.svmFrame, width="1200",height = "600").grid(row=1, column=0)
-		svmButton = Button(self.svmFrame, text ="Generate SVM", command=self.generateSVM).place(x=230,y=250, height=50, width=150)
+		svmButton = Button(self.svmFrame, text ="Generate SVM", command=self.generateSVM).place(x=530,y=50, height=50, width=150)
+		
+	# Generate SVM Accordingly
+	def generateSVM(self):
+		kernels = ['rbf', 'linear','poly']
+		clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
+		#Train the model using the training sets
+		clf.fit(self.X_train, self.y_train)
+
+		#Predict the response for test dataset
+		self.y_pred = clf.predict(self.X_test)
+		self.f1_svm = metrics.f1_score(self.y_test, self.y_pred)
+				
+		bgCanvas = tk.Canvas(self.svmFrame, bg="white", width="440",height = "360").place(x=20,y=130)		
+		labelKernel = tk.Label(self.svmFrame, bg="white", text ="Kernel: RBF (Radial Basis Function)", font=('Helvetica', 12)).place(x=60,y=150)
+		labelTitle = tk.Label(self.svmFrame, bg="white", text ="Performance of Support Vector Machine", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
+		labelAccuracy = tk.Label(self.svmFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
+		labelPrecision = tk.Label(self.svmFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)
+		labelRecall = tk.Label(self.svmFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)	
+		labelF1 = tk.Label(self.svmFrame, bg="white", text ="F1 Score: "+ str(metrics.f1_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=270)
+		
+		confusion_majority=confusion_matrix(self.y_test, self.y_pred)
+		labelTitle2 = tk.Label(self.svmFrame, bg="white", text ="Confusion Matrix", font=('Helvetica', 15, 'bold')).place(x=60,y=300)
+		labelTN = tk.Label(self.svmFrame, bg="white", text ="Majority TN: "+ str(confusion_majority[0][0]), font=('Helvetica', 12)).place(x=60,y=330)
+		labelFP = tk.Label(self.svmFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=350)
+		labelFN = tk.Label(self.svmFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=370)
+		labelTP = tk.Label(self.svmFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=390)
+		'''
+		svc = svm.SVC(kernel='rbf', gamma='auto').fit(self.X_train, self.y_train)
+		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=800,y=150)
+		ax1.scatter(k_range, scores1, label="k")
+		ax1.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
+		ax1.set_xlabel('k')
+		ax1.set_ylabel('Accuracy')
+		ax1.set_title('Accuracy by n_neigbors')
+		ax1.legend(loc = 'upper right')
+		'''
+	def runCME(self):
+		self.generateDT()
+		self.generateKNN()
+		self.generateNB()
+		self.generateSVM()
+		self.destroyFrames()
+		self.mlt1Selected.set(False)
+		self.mlt2Selected.set(False)
+		self.mlt3Selected.set(False)
+		self.mlt4Selected.set(False)
+		self.mlt5Selected.set(True)		
+		self.pmSelected.set(False)
+		self.b4SmoteSelected.set(False)
+		self.smoteSelected.set(False)
+		self.armSelected.set(False)
+		self.genArmSelected.set(False)
+		self.kmcSelected.set(False)
+		self.cmeFrame = tk.Frame(self.window, width=1200, height=600)
+		self.cmeFrame.place(x=0,y=0)
+		canvas = tk.Canvas(self.cmeFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.cmeFrame, bg="pink", fg="white", text ="Classification Model Evaluation", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		emptyCanvas = tk.Canvas(self.cmeFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
+		
+		bgCanvas = tk.Canvas(self.cmeFrame, bg="white", width="400",height = "400").place(x=20,y=130)		
+		labelTitle = tk.Label(self.cmeFrame, bg="white", text ="F1 Score of Classification Models", font=('Helvetica', 15, 'bold')).place(x=60,y=260)
+		labelAccuracy = tk.Label(self.cmeFrame, bg="white", text ="Decision Tree: "+ str(self.f1_dt), font=('Helvetica', 12)).place(x=60,y=290)
+		labelPrecision = tk.Label(self.cmeFrame, bg="white", text ="KNN: "+ str(self.f1_knn), font=('Helvetica', 12)).place(x=60,y=310)
+		labelRecall = tk.Label(self.cmeFrame, bg="white", text ="Naive Bayes: "+ str(self.f1_nb), font=('Helvetica', 12)).place(x=60,y=330)	
+		labelF1 = tk.Label(self.cmeFrame, bg="white", text ="SVM: "+ str(self.f1_svm), font=('Helvetica', 12)).place(x=60,y=350)
+		
+		scores = {'Decision Tree': self.f1_dt, 'KNN': self.f1_knn, 'Naive Bayes': self.f1_nb, 'SVM': self.f1_svm}
+		model = list(scores.keys())
+		score = list(scores.values())
+		
+		figure = plt.Figure(figsize=(7,6), dpi=90)
+		ax = figure.add_subplot(111)
+		ax.bar(model, score, width=0.5)
+		ax.set_title("F1-score of classification models")
+		canvas = FigureCanvasTkAgg(figure,master=self.cmeFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=550,y=50)
+
 	# Destroy Existing Frames when new frame is open
 	def destroyFrames(self):
 		if self.mlt1Selected == True:
@@ -800,7 +1058,10 @@ class LoanPredictor():
 			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
-			self.kmcFrame.pack_forget()				
+			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()				
 		if self.mlt2Selected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -829,6 +1090,9 @@ class LoanPredictor():
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.mlt3Selected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -856,7 +1120,10 @@ class LoanPredictor():
 			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
-			self.kmcFrame.pack_forget()		
+			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()				
 		if self.mlt4Selected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -884,7 +1151,41 @@ class LoanPredictor():
 			self.genArmFrame.pack_forget()	
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
-			self.kmcFrame.pack_forget()	
+			self.kmcFrame.pack_forget()
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
+		if self.mlt5Selected == True:
+			for widget in self.dtFrame.winfo_children():
+			   widget.destroy()
+			self.dtFrame.pack_forget()   
+			for widget in self.knnFrame.winfo_children():
+			   widget.destroy()
+			self.knnFrame.pack_forget() 
+			for widget in self.nbFrame.winfo_children():
+			   widget.destroy()
+			self.nbFrame.pack_forget() 
+			for widget in self.predictionFrame.winfo_children():
+				widget.destroy()
+			self.predictionFrame.pack_forget()
+			for widget in self.b4SmoteFrame.winfo_children():
+				widget.destroy()
+			self.b4SmoteFrame.pack_forget()	
+			for widget in self.smoteFrame.winfo_children():
+				widget.destroy()
+			self.smoteFrame.pack_forget()	
+			for widget in self.armFrame.winfo_children():
+				widget.destroy()
+			self.armFrame.pack_forget()
+			for widget in self.genArmFrame.winfo_children():
+				widget.destroy()
+			self.genArmFrame.pack_forget()	
+			for widget in self.kmcFrame.winfo_children():
+				widget.destroy()
+			self.kmcFrame.pack_forget()
+			for widget in self.svmFrame.winfo_children():
+				widget.destroy()
+			self.svmFrame.pack_forget()				
 		if self.pmSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -913,6 +1214,9 @@ class LoanPredictor():
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.b4SmoteSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -941,6 +1245,9 @@ class LoanPredictor():
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.smoteSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -969,6 +1276,9 @@ class LoanPredictor():
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.armSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -997,6 +1307,9 @@ class LoanPredictor():
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
 			self.kmcFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.genArmSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -1024,7 +1337,10 @@ class LoanPredictor():
 			self.armFrame.pack_forget()			
 			for widget in self.kmcFrame.winfo_children():
 				widget.destroy()
-			self.kmcFrame.pack_forget()				
+			self.kmcFrame.pack_forget()
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 		if self.kmcSelected == True:
 			for widget in self.dtFrame.winfo_children():
 			   widget.destroy()
@@ -1053,6 +1369,9 @@ class LoanPredictor():
 			for widget in self.genArmFrame.winfo_children():
 				widget.destroy()
 			self.genArmFrame.pack_forget()	
+			for widget in self.cmeFrame.winfo_children():
+				widget.destroy()
+			self.cmeFrame.pack_forget()	
 			
 	# Help Menu
 	def aboutUs(self):
@@ -1093,57 +1412,6 @@ class LoanPredictor():
 			   self.propertyType.get() + "\n" +		
 			   self.loanAmount.get() + "\n" +
 			   self.mthSalary.get() + "\n")
-	
-	# Generate DT Accordingly
-	def generateDT(self):
-		dt = DecisionTreeClassifier(random_state=1)
-		dt = dt.fit(self.X_train, self.y_train)
-		self.y_pred = dt.predict(self.X_test)
-		
-		f1_dt = metrics.f1_score(self.y_test, self.y_pred)		
-		f = "Accuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-		messagebox.showinfo("Decision Tree Classifier",f)
-	# Generate KNN Accordingly
-	def generateKNN(self):
-		k = self.knnValue.get()
-		k_range = range(1,10)
-		scores = []
-
-		print("Number of K: " + str(k))
-		knn = KNeighborsClassifier(n_neighbors = k, weights='uniform')
-		knn.fit(self.X_train, self.y_train)
-		scores.append(knn.score(self.X_test, self.y_test))
-		self.y_pred = knn.predict(self.X_test)
-		
-		f1_knn = metrics.f1_score(self.y_test, self.y_pred)
-			
-		f = "No. of K    :" + str(k) + "\nAccuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-		messagebox.showinfo("K-Nearest Neighbour",f)
-		
-		plt.figure()
-		plt.xlabel('k')
-		plt.ylabel('accuracy')
-		plt.title('Accuracy by n_neigbors')
-		plt.scatter(k_range, scores)
-		plt.plot(k_range, scores, color='green', linestyle='dashed', linewidth=1, markersize=5)		
-	# Generate SVM Accordingly
-	def generateSVM(self):
-		kernels = ['linear', 'rbf', 'poly']
-
-		for kernel in kernels:
-			print("Kernel: " + str(kernel))
-			clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
-
-			#Train the model using the training sets
-			clf.fit(self.X_train, self.y_train)
-
-			#Predict the response for test dataset
-			self.y_pred = clf.predict(self.X_test)
-			
-			if (kernel == 'rbf'):
-				f1_svm = metrics.f1_score(self.y_test, self.y_pred)
-			f = "Accuracy   :" + str(metrics.accuracy_score(self.y_test, self.y_pred)) + "\nPrecision  :" + str(metrics.precision_score(self.y_test, self.y_pred)) + "\nRecall       :" + str(metrics.recall_score(self.y_test, self.y_pred)) + "\nF1             :" + str(metrics.f1_score(self.y_test, self.y_pred))
-			messagebox.showinfo("Support Vector Machine",f)
 		
 # Displaying the main window
 mainWindow = LoanPredictor()
