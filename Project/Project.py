@@ -42,6 +42,7 @@ from kmodes.kmodes import KModes
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import make_classification
+from sklearn.cluster import KMeans 
 		
 class LoanPredictor():
 
@@ -669,9 +670,68 @@ class LoanPredictor():
 		self.kmcFrame = tk.Frame(self.window, width=1200, height=600)
 		self.kmcFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.kmcFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.kmcFrame, bg="pink", fg="white", text ="K-Mode Clustering", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.kmcFrame, width="1200",height = "600").grid(row=1, column=0)
+		labelMain = tk.Label(self.kmcFrame, bg="pink", fg="white", text ="K Modes Clustering", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		emptyCanvas = tk.Canvas(self.kmcFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
 		
+		self.df5 = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1)
+		cost = []
+		for num_clusters in list(range(1,5)):
+			kmode = KModes(n_clusters=num_clusters, init = "Cao", n_init = 1, verbose=1)
+			kmode.fit_predict(self.df5)
+			cost.append(kmode.cost_)
+
+		y = np.array([i for i in range(1,5,1)])
+		
+		figure = plt.Figure(figsize=(6,6), dpi=40)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.kmcFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=30,y=50)
+		ax.plot(y,cost, label='Elbow = 2.0')
+		ax.set_xlabel('K')
+		ax.set_ylabel('Cost')
+		ax.legend()
+		ax.set_title('Finding the Elbow for K')
+		
+		print('done')
+		
+		# Chosen cluster = 2, because it is the elbow
+		km = KModes(n_clusters=2, init = "Cao", n_init = 1, verbose=1)
+		clusters = km.fit_predict(self.df5)
+		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
+		
+		clusters_df = pd.DataFrame(clusters)
+		clusters_df.columns = ['Cluster']
+		df5_new = pd.concat([self.df5, clusters_df], axis = 1).reset_index()
+		df5_new = df5_new.drop(df5_new.columns[0],axis=1)
+		
+		
+		figure1 = plt.Figure(figsize=(6,6), dpi=40)
+		ax1 = figure1.subplots()
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.kmcFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=30,y=300)
+		ax1.set_title('Number of Clusters = 2')
+		b = sns.countplot(x='Cluster', data=df5_new, ax=ax1)
+		for p in b.patches:
+			b.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		
+
+		figure2 = plt.Figure(figsize = (15,5), dpi=40)
+		ax2 = figure2.subplots()
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.kmcFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=300,y=50)
+		#ax1.set_title('Number of Clusters = 2')
+		b1 = sns.countplot(x=df5_new['Employment_Type'],order=df5_new['Employment_Type'].value_counts().index,hue=df5_new['Cluster'], ax=ax2)
+		for p in b1.patches:
+			b1.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
 	# Machine Learning Technique(s) Menu
 	# Decision Tree Classifier On Selected in Menu
 	def runDT(self):
