@@ -682,11 +682,11 @@ class LoanPredictor():
 
 		y = np.array([i for i in range(1,5,1)])
 		
-		figure = plt.Figure(figsize=(6,6), dpi=40)
+		figure = plt.Figure(figsize=(6,6), dpi=47)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.kmcFrame)
 		canvas.draw()
-		canvas.get_tk_widget().place(x=30,y=50)
+		canvas.get_tk_widget().place(x=30,y=45)
 		ax.plot(y,cost, label='Elbow = 2.0')
 		ax.set_xlabel('K')
 		ax.set_ylabel('Cost')
@@ -706,11 +706,11 @@ class LoanPredictor():
 		df5_new = df5_new.drop(df5_new.columns[0],axis=1)
 		
 		
-		figure1 = plt.Figure(figsize=(6,6), dpi=40)
+		figure1 = plt.Figure(figsize=(6,6), dpi=47)
 		ax1 = figure1.subplots()
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.kmcFrame)
 		canvas1.draw()
-		canvas1.get_tk_widget().place(x=30,y=300)
+		canvas1.get_tk_widget().place(x=30,y=315)
 		ax1.set_title('Number of Clusters = 2')
 		b = sns.countplot(x='Cluster', data=df5_new, ax=ax1)
 		for p in b.patches:
@@ -720,11 +720,11 @@ class LoanPredictor():
 			xytext=(0, 18), textcoords='offset points')
 		
 
-		figure2 = plt.Figure(figsize = (15,5), dpi=40)
+		figure2 = plt.Figure(figsize = (27,5), dpi=35)
 		ax2 = figure2.subplots()
 		canvas2 = FigureCanvasTkAgg(figure2,master=self.kmcFrame)
 		canvas2.draw()
-		canvas2.get_tk_widget().place(x=300,y=50)
+		canvas2.get_tk_widget().place(x=300,y=45)
 		#ax1.set_title('Number of Clusters = 2')
 		b1 = sns.countplot(x=df5_new['Employment_Type'],order=df5_new['Employment_Type'].value_counts().index,hue=df5_new['Cluster'], ax=ax2)
 		for p in b1.patches:
@@ -732,6 +732,35 @@ class LoanPredictor():
 			p.get_width() / 2., p.get_height()), 
 			ha='center', va='center', rotation=0, 
 			xytext=(0, 18), textcoords='offset points')
+			
+			
+		figure3 = plt.Figure(figsize = (27,5), dpi=35)
+		ax3 = figure3.subplots()
+		canvas3 = FigureCanvasTkAgg(figure3,master=self.kmcFrame)
+		canvas3.draw()
+		canvas3.get_tk_widget().place(x=300,y=230)
+		#ax1.set_title('Number of Clusters = 2')
+		b2 = sns.countplot(x=df5_new['Credit_Card_types'],order=df5_new['Credit_Card_types'].value_counts().index,hue=df5_new['Cluster'], ax=ax3)
+		for p in b2.patches:
+			b2.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+
+
+		figure4 = plt.Figure(figsize = (27,5), dpi=35)
+		ax4 = figure4.subplots()
+		canvas4 = FigureCanvasTkAgg(figure4,master=self.kmcFrame)
+		canvas4.draw()
+		canvas4.get_tk_widget().place(x=300,y=420)
+		#ax1.set_title('Number of Clusters = 2')
+		b3 = sns.countplot(x=df5_new['Monthly_Salary'],order=df5_new['Monthly_Salary'].value_counts().index,hue=df5_new['Cluster'], ax=ax4)
+		for p in b3.patches:
+			b3.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+			
 	# Machine Learning Technique(s) Menu
 	# Decision Tree Classifier On Selected in Menu
 	def runDT(self):
