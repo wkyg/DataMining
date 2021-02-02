@@ -34,6 +34,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_recall_curve
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
+from mlxtend.preprocessing import TransactionEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import datasets, neighbors
 from matplotlib.colors import ListedColormap
@@ -60,16 +61,17 @@ class LoanPredictor():
 		self.armFrame = Frame()
 		self.genArmFrame = Frame()
 		self.kmcFrame = Frame()
-		self.employmentType = ''
-		self.propertyType =''
-		self.cardType = ''
-		self.mthSalary = ''
+		self.employmentType = StringVar()
+		self.propertyType = StringVar()
+		self.cardType = StringVar()
+		self.mthSalary = StringVar()
 		self.loanAmount = ''
 		self.f1_dt = ''
 		self.f1_knn = ''
 		self.f1_nb = ''
 		self.f1_svm = ''
 		self.knnValue = IntVar()
+		self.dictionary = defaultdict(LabelEncoder)
 		self.window = window
 		self.window.title("Bank Loan Predictor")
 		self.window.resizable(False, False)
@@ -126,8 +128,8 @@ class LoanPredictor():
 		helpMenu.add_command(label = "How to Use", command = self.howToUse)			
 		menubar.add_cascade(label = "Help", menu = helpMenu)
 		
-		self.runPM()
 		self.dataPreprocess()
+		self.runPM()
 	
 	# Create Main Display
 	def runPM(self):
@@ -140,7 +142,6 @@ class LoanPredictor():
 		# Create Sub-Categories
 		# SubCategory1 = Employment_Type
 		labelSubCat1 = Label(self.predictionFrame, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=210,y=90)
-		self.employmentType = StringVar()
 		empType1 = Radiobutton(self.predictionFrame, text="Employee", variable=self.employmentType, value="Employee",command=self.saveSelectedValues).place(x=210,y=110)
 		empType2 = Radiobutton(self.predictionFrame, text="Employer", variable=self.employmentType, value="Employer",command=self.saveSelectedValues).place(x=210,y=130)
 		empType3 = Radiobutton(self.predictionFrame, text="Fresh Graduate", variable=self.employmentType, value="Fresh Graduate", command=self.saveSelectedValues).place(x=210,y=150)
@@ -148,14 +149,12 @@ class LoanPredictor():
 		
 		# SubCategory2 = Credit_Card_types
 		labelSubCat2 = Label(self.predictionFrame, text ="Type of Credit Cards", font=('Helvetica', 10), justify=LEFT).place(x=420,y=90)
-		self.cardType = StringVar()
 		cardType1 = Radiobutton(self.predictionFrame, text="Normal", variable=self.cardType, value="Normal",command=self.saveSelectedValues).place(x=420,y=110)
 		cardType2 = Radiobutton(self.predictionFrame, text="Gold", variable=self.cardType, value="Gold",command=self.saveSelectedValues).place(x=420,y=130)
 		cardType3 = Radiobutton(self.predictionFrame, text="Platinum", variable=self.cardType, value="Platinum", command=self.saveSelectedValues).place(x=420,y=150)	
 		
 		# SubCategory3 = Property_Type
 		labelSubCat3 = Label(self.predictionFrame, text ="Type of Properties", font=('Helvetica', 10), justify=LEFT).place(x=640,y=90) 
-		self.propertyType = StringVar()
 		propertyType1 = Radiobutton(self.predictionFrame, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=640,y=110)		
 		propertyType2 = Radiobutton(self.predictionFrame, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=640,y=130)
 		propertyType3 = Radiobutton(self.predictionFrame, text="Flat", variable=self.propertyType, value="Flat",command=self.saveSelectedValues).place(x=640,y=150)
@@ -163,7 +162,6 @@ class LoanPredictor():
 		
 		# SubCategory4 = Monthly_Salary
 		labelSubCat4 = Label(self.predictionFrame, text ="Monthly Salary (RM)", font=('Helvetica', 10), justify=LEFT).place(x=860,y=90)
-		self.mthSalary = StringVar()
 		mthSalary1 = Radiobutton(self.predictionFrame, text="<4,000", variable=self.mthSalary, value="<4,000", command=self.saveSelectedValues).place(x=860,y=110)
 		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="4,000 - 7,000", command=self.saveSelectedValues).place(x=860,y=130)
 		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="7,000 - 10,000", command=self.saveSelectedValues).place(x=860,y=150)
@@ -171,6 +169,35 @@ class LoanPredictor():
 		
 		resetBtn = Button(self.predictionFrame, text ="Reset", command=self.resetButtonOnClicked).place(x=450,y=500, height=50, width=150) 	
 		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=600,y=500, height=50, width=150)
+		
+		
+	# Prediction Button On Clicked
+	def predictionButtonOnClicked(self):
+		print('yeet')
+		if (self.employmentType.get() == None or self.cardType.get() == None or self.propertyType.get() == None or self.mthSalary.get() == None):
+			print ('Select the criteria for prediction first!')
+		else:
+			X_train, X_test, y_train, y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
+			model = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
+			model.fit(X_train, y_train)
+
+			input=pd.DataFrame([[self.employmentType.get(),self.cardType.get(),self.propertyType.get(),self.mthSalary.get()]], columns=['Employment_Type','Credit_Card_types', 'Property_Type', 'Monthly_Salary'])
+			input = input.astype({'Monthly_Salary':'category'}, copy=False)
+			
+			input = input.apply(lambda x: self.dictionary[x.name].fit_transform(x))
+			print (input)
+			prediction = model.predict(input)
+			prediction = self.dictionary['Decision'].inverse_transform(prediction)
+			
+			print('The bank has ' + str(prediction[0]) + 'ed the loan application.')
+					
+			labelPrediction = Label(self.predictionFrame, text ='The bank has ' + str(prediction[0]) + 'ed the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=450,y=450)
+		
+	def saveSelectedValues(self):
+		print (self.employmentType.get() + "\n" + 
+			   self.cardType.get() + "\n" +
+			   self.propertyType.get() + "\n" +		
+			   self.mthSalary.get() + "\n")
 		
 	def dataPreprocess(self):
 		# Load Data
@@ -245,7 +272,6 @@ class LoanPredictor():
 		#Applying SMOTE based on Decision
 		self.df3 = self.df2.copy()
 
-		self.dictionary = defaultdict(LabelEncoder)
 		self.df3 = self.df2.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 
 		y = self.df3.Decision
@@ -265,7 +291,8 @@ class LoanPredictor():
 		# Machine Learning Techiniques
 		# Support Vector Machine (SVM)
 		self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
-		
+		print('X_train')
+		print (self.X_train)
 		self.dictionary1 = defaultdict(LabelEncoder)
 		self.dfSmote1 = self.dfSmote.apply(lambda x: self.dictionary1[x.name].fit_transform(x))
 	
@@ -512,16 +539,16 @@ class LoanPredictor():
 		self.maxAnteValue = DoubleVar()
 		self.maxConsValue = DoubleVar()
 		
-		minSuppLabel = Label(self.armFrame, text='Choose the minimum support').place(x=10,y=50)
-		minsupp = tk.Scale(self.armFrame, from_=0.0001, to=0.0300, digits = 5, resolution = 0.0001, orient=HORIZONTAL, variable=self.minSuppValue).place(x=10,y=70)
-		minConfLabel = Label(self.armFrame, text='Choose the minimum confidence').place(x=10,y=110)		
-		minconf = tk.Scale(self.armFrame, from_=0.50, to=1.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=10,y=130)
-		minLiftLabel = Label(self.armFrame, text='Choose the minimum lift').place(x=10,y=170)
-		minlift = tk.Scale(self.armFrame, from_=0.50, to=2.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=10,y=190)
-		maxAnteLabel = Label(self.armFrame, text='Choose maximum number of antecedent').place(x=10,y=230)		
-		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=10,y=250)
-		maxConsLabel = Label(self.armFrame, text='Choose maximum number of consequent').place(x=10,y=290)			
-		maxcons = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxConsValue).place(x=10,y=310)
+		minSuppLabel = tk.Label(self.armFrame, text='Choose the minimum support').place(x=530,y=90)
+		minsupp = tk.Scale(self.armFrame, from_=0.0001, to=0.0300, digits = 5, resolution = 0.0001, orient=HORIZONTAL, variable=self.minSuppValue).place(x=570,y=110)
+		minConfLabel = tk.Label(self.armFrame, text='Choose the minimum confidence').place(x=530,y=150)		
+		minconf = tk.Scale(self.armFrame, from_=0.50, to=1.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=570,y=170)
+		minLiftLabel = tk.Label(self.armFrame, text='Choose the minimum lift').place(x=530,y=210)
+		minlift = tk.Scale(self.armFrame, from_=0.50, to=2.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=570,y=230)
+		maxAnteLabel = tk.Label(self.armFrame, text='Choose maximum number of antecedent').place(x=510,y=270)		
+		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=570,y=290)
+		maxConsLabel = tk.Label(self.armFrame, text='Choose maximum number of consequent').place(x=510,y=330)			
+		maxcons = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxConsValue).place(x=570,y=350)
 		generateBtn = Button(self.armFrame, text="Generate Rules", command=self.generateARM).place(x=550,y=500, height=50, width=150)
 		
 	def generateARM(self):
@@ -540,95 +567,29 @@ class LoanPredictor():
 		self.genArmFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.genArmFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.genArmFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.genArmFrame, width="1200",height = "600").grid(row=1, column=0)
-		resetBtn = Button(self.genArmFrame, text="Reset", command=self.runARM).place(x=230,y=350, height=50, width=150)
-		
-		
-		basketEmployer = (self.df3[self.df3['Employment_Type'] =="Employer"] 
-          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
-          .sum().unstack().reset_index().fillna(0) 
-          .set_index('Employment_Type')
-		  ) 
-		basketSelfEmp = (self.df3[self.df3['Employment_Type'] =="Self-Employed"] 
-          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
-          .sum().unstack().reset_index().fillna(0) 
-          .set_index('Employment_Type')
-		  ) 
-		basketGov = (self.df3[self.df3['Employment_Type'] =="Government"] 
-          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
-          .sum().unstack().reset_index().fillna(0) 
-          .set_index('Employment_Type')
-		  ) 
-		basketEmployee = (self.df3[self.df3['Employment_Type'] =="Employee"] 
-          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
-          .sum().unstack().reset_index().fillna(0) 
-          .set_index('Employment_Type')
-		  ) 		  
-		basketFreshGrad = (self.df3[self.df3['Employment_Type'] =="Fresh Graduate"] 
-          .groupby(['Employment_Type', 'Monthly_Salary'])['Score'] 
-          .sum().unstack().reset_index().fillna(0) 
-          .set_index('Employment_Type')
-		  ) 
-		 
-		# Defining the hot encoding function to make the data suitable for the concerned libraries
-		
-		# Encoding the datasets 
-		basket_encoded = basketEmployer.applymap(self.hot_encode) 
-		basketEmployer = basket_encoded 
-		print (basketEmployer)
-		print ("yeet")
-		  
-		basket_encoded = basketSelfEmp.applymap(self.hot_encode) 
-		basketSelfEmp = basket_encoded 
-		  
-		basket_encoded = basketGov.applymap(self.hot_encode) 
-		basketGov = basket_encoded 
-		  
-		basket_encoded = basketEmployee.applymap(self.hot_encode) 
-		basketEmployee = basket_encoded 		
-		
-		basket_encoded = basketFreshGrad.applymap(self.hot_encode) 
-		basketFreshGrad = basket_encoded
-		
+		emptyCanvas = tk.Canvas(self.genArmFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
+		resetBtn = Button(self.genArmFrame, text="Reset", command=self.runARM).place(x=200,y=530, height=50, width=150)
+
 		records = []
 		for i in range(0, 2350):
 			records.append([str(self.df4.values[i,j]) for j in range(0, 4)])
 		
 		print (records)
+		
 		association_rules = apriori(records, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get(), min_length=2)
 		
-		# Building the model 
-		frq_items = apriori(basketEmployer, min_support = 0.05, use_colnames = True) 
-		print (frq_items)
-		print ("123")
-		  
-		# Collecting the inferred rules in a dataframe 
-		#rules = association_rules(frq_items, metric ="lift", min_threshold = 1) 
-		#print(rules.head()) 
-		
 		association_rules_list = list(association_rules)
-		labelRules = tk.Label(self.genArmFrame, text = "Total Rules Generated: " + str(len(association_rules_list)), font=('Helvetica', 15, 'bold')).place(x=100,y=100)
-		labelMinSupp = tk.Label(self.genArmFrame, text = "Minimum Support Value: " + str(self.minSuppValue.get()), font=('Helvetica', 12)).place(x=100,y=130)
-		labelMinConf = tk.Label(self.genArmFrame, text = "Minimum Confidence Value: " + str(self.minConfValue.get()), font=('Helvetica', 12)).place(x=100,y=150)	
-		labelMinLift = tk.Label(self.genArmFrame, text = "Minimum Lift Value: " + str(self.minLiftValue.get()), font=('Helvetica', 12)).place(x=100,y=170)	
-		labelMaxAnte = tk.Label(self.genArmFrame, text = "Maximum Antecedent Value: " + str(self.maxAnteValue.get()), font=('Helvetica', 12)).place(x=100,y=190)	
-		labelMaxCons = tk.Label(self.genArmFrame, text = "Maximum Consequent Value: " + str(self.maxConsValue.get()), font=('Helvetica', 12)).place(x=100,y=210)	
-		labelTop10Rules = tk.Label(self.genArmFrame, text = "Top 10 Rules", font=('Helvetica', 15, 'bold')).place(x=500,y=50)	
-		'''
-		support=DataFrame(rules, columns=['support'])
-		confidence=DataFrame(rules, columns=['confidence'])
-		
-		for i in range (len(support)):
-		   support[i] = support[i] + 0.0025 * (random.randint(1,10) - 5) 
-		   confidence[i] = confidence[i] + 0.0025 * (random.randint(1,10) - 5)
-		 
-		plt.scatter(support, confidence,   alpha=0.5, marker="*")
-		plt.xlabel('support')
-		plt.ylabel('confidence') 
-		plt.show()
-		'''
-		#print(len(association_rules_list))
-		
+		descCanvas = tk.Canvas(self.genArmFrame, bg='white', width="400",height = "440").place(x=80,y=80)	
+		labelRules = tk.Label(self.genArmFrame, bg='white',text = "Total Rules Generated: " + str(len(association_rules_list)), font=('Helvetica', 15, 'bold')).place(x=120,y=100)
+		labelMinSupp = tk.Label(self.genArmFrame, bg='white', text = "Minimum Support Value: " + str(self.minSuppValue.get()), font=('Helvetica', 12)).place(x=120,y=130)
+		labelMinConf = tk.Label(self.genArmFrame, bg='white', text = "Minimum Confidence Value: " + str(self.minConfValue.get()), font=('Helvetica', 12)).place(x=120,y=150)	
+		labelMinLift = tk.Label(self.genArmFrame, bg='white', text = "Minimum Lift Value: " + str(self.minLiftValue.get()), font=('Helvetica', 12)).place(x=120,y=170)	
+		labelMaxAnte = tk.Label(self.genArmFrame, bg='white', text = "Maximum Antecedent Value: " + str(self.maxAnteValue.get()), font=('Helvetica', 12)).place(x=120,y=190)	
+		labelMaxCons = tk.Label(self.genArmFrame, bg='white', text = "Maximum Consequent Value: " + str(self.maxConsValue.get()), font=('Helvetica', 12)).place(x=120,y=210)
+				
+		rule = []
+		support = []
+		confidence = []
 		for item in association_rules_list:
 
 			# first index of the inner list
@@ -636,17 +597,45 @@ class LoanPredictor():
 			pair = item[0] 
 			items = [x for x in pair]
 			print("Rule: " + items[0] + " -> " + items[1])
+			rule.append(items[0] + " -> " + items[1])
 
 			#second index of the inner list
 			print("Support: " + str(item[1]))
+			support.append(item[1])
 
 			#third index of the list located at 0th
 			#of the third index of the inner list
 
 			print("Confidence: " + str(item[2][0][2]))
+			confidence.append(item[2][0][2])
 			print("Lift: " + str(item[2][0][3]))
-			print("Decision by the Bank: " + items[-1])
 			print("=====================================")
+			
+		labelTopRules = tk.Label(self.genArmFrame, bg='white', text = "Top 3 Rules", font=('Helvetica', 15, 'bold')).place(x=120,y=250)
+		labelRule1 = tk.Label(self.genArmFrame, bg='white', text = "Rule 1: " + str(rule[0]), font=('Helvetica', 12)).place(x=120,y=280)
+		labelSupp1 = tk.Label(self.genArmFrame, bg='white', text = "Support: " + str(support[0]), font=('Helvetica', 12)).place(x=120,y=300)
+		labelConf1 = tk.Label(self.genArmFrame, bg='white', text = "Confidence: " + str(confidence[0]), font=('Helvetica', 12)).place(x=120,y=320)	
+		labelRule2 = tk.Label(self.genArmFrame, bg='white', text = "Rule 2: " + str(rule[1]), font=('Helvetica', 12)).place(x=120,y=360)
+		labelSupp2 = tk.Label(self.genArmFrame, bg='white', text = "Support: " + str(support[1]), font=('Helvetica', 12)).place(x=120,y=380)
+		labelConf2 = tk.Label(self.genArmFrame, bg='white', text = "Confidence: " + str(confidence[1]), font=('Helvetica', 12)).place(x=120,y=400)	
+		labelRule3 = tk.Label(self.genArmFrame, bg='white', text = "Rule 3: " + str(rule[2]), font=('Helvetica', 12)).place(x=120,y=440)
+		labelSupp3 = tk.Label(self.genArmFrame, bg='white', text = "Support: " + str(support[2]), font=('Helvetica', 12)).place(x=120,y=460)
+		labelConf3 = tk.Label(self.genArmFrame, bg='white', text = "Confidence: " + str(confidence[2]), font=('Helvetica', 12)).place(x=120,y=480)			
+			
+		dfSupp = pd.DataFrame(support, columns=['Support']) 
+		dfConf = pd.DataFrame(confidence, columns=['Confidence']) 		
+		dfArm = pd.concat([dfSupp.reset_index(drop=True), dfConf], axis=1)
+		print (dfArm)
+		
+		figure = plt.Figure(figsize=(6,6), dpi=90)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.genArmFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=600,y=47)
+		ax.scatter(support, confidence, data=dfArm, alpha=0.5, marker="*", label='Rules')
+		ax.set_xlabel('Support')
+		ax.set_ylabel('Confidence')
+		ax.legend()
 	
 	def hot_encode(self,x): 
 		if(x<= 0): 
@@ -1475,32 +1464,6 @@ class LoanPredictor():
 	def resetButtonOnClicked(self):
 		self.runPM()
 		self.destroyFrames()
-		
-	# Prediction Button On Clicked
-	def predictionButtonOnClicked(self):
-		clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
-
-		#Train the model using the training sets
-		clf.fit(self.X_train, self.y_train)
-
-		#Predict the response for test dataset
-		self.y_pred = clf.predict(self.X_test)
-		
-		f1_svm = metrics.f1_score(self.y_test, self.y_pred)
-		
-		#input=pd.DataFrame(np.array([self.employmentType.get(),self.loanAmount.get(),self.cardType.get(),self.propertyType.get(),self.mthSalary.get()]), columns=['Employment_Type', 'Loan_Amount', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary'])
-		#input = input.astype({'Monthly_Salary':'category', 'Employment_Type':'str', 'Decision' : 'str'}, copy=False)
-		
-		#input = input.apply(lambda x: dictionary[x.name].transform(x))
-		#prediction = model.predict(input)
-		#prediction = dictionary['Employment'].inverse_transform(prediction)
-		
-	def saveSelectedValues(self):
-		print (self.employmentType.get() + "\n" + 
-			   self.cardType.get() + "\n" +
-			   self.propertyType.get() + "\n" +		
-			   self.loanAmount.get() + "\n" +
-			   self.mthSalary.get() + "\n")
 		
 # Displaying the main window
 mainWindow = LoanPredictor()
