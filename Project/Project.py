@@ -26,7 +26,9 @@ from sklearn.feature_selection import RFECV
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn.svm import SVC 
+from sklearn.datasets import make_blobs
 from sklearn import metrics
+from sklearn.metrics import average_precision_score
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.metrics import roc_curve
@@ -70,6 +72,14 @@ class LoanPredictor():
 		self.f1_knn = ''
 		self.f1_nb = ''
 		self.f1_svm = ''
+		self.auc_DT = 0.0
+		self.auc_NB = 0.0
+		self.auc_KNN = 0.0
+		self.auc_SVM = 0.0
+		self.prs_DT = 0.0
+		self.prs_NB = 0.0
+		self.prs_KNN = 0.0
+		self.prs_SVM = 0.0		
 		self.knnValue = IntVar()
 		self.dictionary = defaultdict(LabelEncoder)
 		self.window = window
@@ -769,7 +779,7 @@ class LoanPredictor():
 		self.dtFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.dtFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.dtFrame, bg="pink", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.dtFrame, width="1200",height = "600").grid(row=1, column=0)		
+		emptyCanvas = tk.Canvas(self.dtFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)		
 		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=530,y=50, height=50, width=150)
 		
 	# Generate DT Accordingly
@@ -794,19 +804,21 @@ class LoanPredictor():
 		labelFN = tk.Label(self.dtFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
 		labelTP = tk.Label(self.dtFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
 		
-		prob_DT = model_DT.predict_proba(self.X_test)
-		prob_DT = prob_DT[:, 1]
+		self.prob_DT = model_DT.predict_proba(self.X_test)
+		self.prob_DT = self.prob_DT[:, 1]
 
-		auc_DT= roc_auc_score(self.y_test, prob_DT)
-		labelTitle3 = tk.Label(self.dtFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
-		labelAUC = tk.Label(self.dtFrame, bg="white", text ='AUC: %.2f' % auc_DT, font=('Helvetica', 12)).place(x=60,y=430)		
+		self.auc_DT= roc_auc_score(self.y_test, self.prob_DT)
+		self.prs_DT= average_precision_score(self.y_test, self.prob_DT)	
+		labelTitle3 = tk.Label(self.dtFrame, bg="white", text ="Curve Scores", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.dtFrame, bg="white", text ='ROC Curve: %.2f' % self.auc_DT, font=('Helvetica', 12)).place(x=60,y=430)
+		labelPRS = tk.Label(self.dtFrame, bg="white", text ='Precision-Recall Curve: %.2f' % self.prs_DT, font=('Helvetica', 12)).place(x=60,y=450)			
 		
 		figure = plt.Figure(figsize=(6,6), dpi=60)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.dtFrame)
 		canvas.draw()
 		canvas.get_tk_widget().place(x=430,y=130)
-		fpr_DT, tpr_DT, thresholds_DT = roc_curve(self.y_test, prob_DT)
+		fpr_DT, tpr_DT, thresholds_DT = roc_curve(self.y_test, self.prob_DT)
 		ax.plot(fpr_DT, tpr_DT, 'b', label = 'DT')
 		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
 		ax.set_xlabel('False Positive Rate')
@@ -822,7 +834,7 @@ class LoanPredictor():
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.dtFrame)
 		canvas1.draw()
 		canvas1.get_tk_widget().place(x=800,y=130)
-		prec_DT, rec_DT, threshold_DT = precision_recall_curve(self.y_test, prob_DT)
+		prec_DT, rec_DT, threshold_DT = precision_recall_curve(self.y_test, self.prob_DT)
 		ax1.plot(prec_DT, rec_DT, color='orange', label='DT') 
 		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
 		ax1.set_xlabel('Recall')
@@ -851,14 +863,14 @@ class LoanPredictor():
 		self.knnFrame.place(x=0,y=0)	
 		canvas = tk.Canvas(self.knnFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.knnFrame, bg="pink", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.knnFrame, width="1200",height = "600").grid(row=1, column=0)	
-		knnSelector = tk.Scale(self.knnFrame, from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=550,y=50)		
-		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=530,y=90, height=50, width=150)
+		emptyCanvas = tk.Canvas(self.knnFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)	
+		knnSelector = tk.Scale(self.knnFrame, bg='white', from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=455,y=50, height=50, width=150)		
+		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=615,y=50, height=50, width=150)
 		
 	# Generate KNN Accordingly
 	def generateKNN(self):
 		if self.knnValue.get() == 0:
-			k = 1
+			k = 3
 		else:
 			k = self.knnValue.get()
 		k_range = range(1,10)
@@ -872,8 +884,8 @@ class LoanPredictor():
 		self.y_pred = knn.predict(self.X_test)
 		self.f1_knn = metrics.f1_score(self.y_test, self.y_pred)
 		
-		prob_KNN = knn.predict_proba(self.X_test)
-		prob_KNN = prob_KNN[:, 1]
+		self.prob_KNN = knn.predict_proba(self.X_test)
+		self.prob_KNN = self.prob_KNN[:, 1]
 		
 		bgCanvas = tk.Canvas(self.knnFrame, bg="white", width="400",height = "360").place(x=20,y=150)
 		labelTitle = tk.Label(self.knnFrame, bg="white", text ="Performance of K-Nearest Neighbor", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
@@ -889,39 +901,60 @@ class LoanPredictor():
 		labelFN = tk.Label(self.knnFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=370)
 		labelTP = tk.Label(self.knnFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=390)
 
-		auc_KNN= roc_auc_score(self.y_test, prob_KNN)
-		labelTitle3 = tk.Label(self.knnFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=420)		
-		labelAUC = tk.Label(self.knnFrame, bg="white", text ='AUC: %.2f' % auc_KNN, font=('Helvetica', 12)).place(x=60,y=450)	
+		self.auc_KNN= roc_auc_score(self.y_test, self.prob_KNN)
+		self.prs_KNN= average_precision_score(self.y_test, self.prob_KNN)
+		labelTitle3 = tk.Label(self.knnFrame, bg="white", text ="Curve Scores", font=('Helvetica', 15, 'bold')).place(x=60,y=420)		
+		labelAUC = tk.Label(self.knnFrame, bg="white", text ='ROC Curve: %.2f' % self.auc_KNN, font=('Helvetica', 12)).place(x=60,y=450)
+		labelPRS = tk.Label(self.knnFrame, bg="white", text ='Precision-Recall Curve: %.2f' % self.prs_KNN, font=('Helvetica', 12)).place(x=60,y=470)		
 
-		figure = plt.Figure(figsize=(6,6), dpi=60)
+		figure = plt.Figure(figsize=(6.5,4), dpi=60)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.knnFrame)
 		canvas.draw()
-		canvas.get_tk_widget().place(x=430,y=150)
-		fpr_KNN, tpr_KNN, thresholds_KNN = roc_curve(self.y_test, prob_KNN)
+		canvas.get_tk_widget().place(x=430,y=110)
+		fpr_KNN, tpr_KNN, thresholds_KNN = roc_curve(self.y_test, self.prob_KNN)
 		ax.plot(fpr_KNN, tpr_KNN, 'b', label = 'KNN')
 		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
 		ax.set_xlabel('False Positive Rate')
 		ax.set_ylabel('True Positive Rate')
 		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
 		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6.5,4), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=430,y=350)
+		prec_KNN, rec_KNN, threshold_KNN = precision_recall_curve(self.y_test, self.prob_KNN)
+		ax1.plot(prec_KNN, rec_KNN, color='orange', label='KNN') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
 		
 		for k in k_range:
 			knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
 			knn.fit(self.X_train, self.y_train)
 			scores1.append(knn.score(self.X_test, self.y_test))
 
-		figure1 = plt.Figure(figsize=(6,6), dpi=60)
-		ax1 = figure1.add_subplot(111)
-		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
-		canvas1.draw()
-		canvas1.get_tk_widget().place(x=800,y=150)
-		ax1.scatter(k_range, scores1, label="k")
-		ax1.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
-		ax1.set_xlabel('k')
-		ax1.set_ylabel('Accuracy')
-		ax1.set_title('Accuracy by n_neigbors')
-		ax1.legend(loc = 'upper right')
+		figure2 = plt.Figure(figsize=(6,8), dpi=70)
+		ax2 = figure2.add_subplot(111)
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.knnFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=800,y=60)
+		ax2.scatter(k_range, scores1, label="k")
+		ax2.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
+		ax2.set_xlabel('k')
+		ax2.set_ylabel('Accuracy')
+		ax2.set_title('Accuracy by n_neigbors')
+		ax2.legend(loc = 'upper right')
 
 	# Naive Bayes On Selected in Menu
 	def runNB(self):
@@ -941,7 +974,7 @@ class LoanPredictor():
 		self.nbFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.nbFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.nbFrame, bg="pink", fg="white", text ="Naive Bayes", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.nbFrame, width="1200",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.nbFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		nbButton = Button(self.nbFrame, text ="Generate Naive Bayes", command=self.generateNB).place(x=530,y=50, height=50, width=150)
 	
 	# Generate NB Accordingly
@@ -966,19 +999,21 @@ class LoanPredictor():
 		labelFN = tk.Label(self.nbFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=350)
 		labelTP = tk.Label(self.nbFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=370)
 		
-		prob_NB = nb.predict_proba(self.X_test)
-		prob_NB= prob_NB[:, 1]
+		self.prob_NB = nb.predict_proba(self.X_test)
+		self.prob_NB= self.prob_NB[:, 1]
 
-		auc_NB= roc_auc_score(self.y_test, prob_NB)
-		labelTitle3 = tk.Label(self.nbFrame, bg="white", text ="Receiver Operating Characteristic", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
-		labelAUC = tk.Label(self.nbFrame, bg="white", text ='AUC: %.2f' % auc_NB, font=('Helvetica', 12)).place(x=60,y=430)		
+		self.auc_NB= roc_auc_score(self.y_test, self.prob_NB)
+		self.prs_NB= average_precision_score(self.y_test, self.prob_NB)
+		labelTitle3 = tk.Label(self.nbFrame, bg="white", text ="Curve Scores", font=('Helvetica', 15, 'bold')).place(x=60,y=400)		
+		labelAUC = tk.Label(self.nbFrame, bg="white", text ='ROC Curve: %.2f' % self.auc_NB, font=('Helvetica', 12)).place(x=60,y=430)
+		labelPRS = tk.Label(self.nbFrame, bg="white", text ='Precision-Recall Curve: %.2f' % self.prs_NB, font=('Helvetica', 12)).place(x=60,y=450)				
 		
 		figure = plt.Figure(figsize=(6,6), dpi=60)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.nbFrame)
 		canvas.draw()
 		canvas.get_tk_widget().place(x=430,y=130)
-		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, prob_NB)
+		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, self.prob_NB)
 		ax.plot(fpr_NB, tpr_NB, 'b', label = 'NB')
 		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
 		ax.set_xlabel('False Positive Rate')
@@ -994,7 +1029,7 @@ class LoanPredictor():
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.nbFrame)
 		canvas1.draw()
 		canvas1.get_tk_widget().place(x=800,y=130)
-		prec_NB, rec_NB, threshold_NB = precision_recall_curve(self.y_test, prob_NB)
+		prec_NB, rec_NB, threshold_NB = precision_recall_curve(self.y_test, self.prob_NB)
 		ax1.plot(prec_NB, rec_NB, color='orange', label='NB') 
 		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
 		ax1.set_xlabel('Recall')
@@ -1023,12 +1058,11 @@ class LoanPredictor():
 		self.svmFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.svmFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
 		labelMain = tk.Label(self.svmFrame, bg="pink", fg="white", text ="Support Vector Machine", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
-		emptyCanvas = tk.Canvas(self.svmFrame, width="1200",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.svmFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		svmButton = Button(self.svmFrame, text ="Generate SVM", command=self.generateSVM).place(x=530,y=50, height=50, width=150)
 		
 	# Generate SVM Accordingly
 	def generateSVM(self):
-		kernels = ['rbf', 'linear','poly']
 		clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
 		#Train the model using the training sets
 		clf.fit(self.X_train, self.y_train)
@@ -1036,10 +1070,13 @@ class LoanPredictor():
 		#Predict the response for test dataset
 		self.y_pred = clf.predict(self.X_test)
 		self.f1_svm = metrics.f1_score(self.y_test, self.y_pred)
-				
-		bgCanvas = tk.Canvas(self.svmFrame, bg="white", width="440",height = "360").place(x=20,y=130)		
+			
+		self.prob_SVM = clf.predict_proba(self.X_test)
+		self.prob_SVM= self.prob_SVM[:, 1]
+
+		bgCanvas = tk.Canvas(self.svmFrame, bg="white", width="400",height = "390").place(x=20,y=130)		
 		labelKernel = tk.Label(self.svmFrame, bg="white", text ="Kernel: RBF (Radial Basis Function)", font=('Helvetica', 12)).place(x=60,y=150)
-		labelTitle = tk.Label(self.svmFrame, bg="white", text ="Performance of Support Vector Machine", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
+		labelTitle = tk.Label(self.svmFrame, bg="white", text ="Performance of SVM", font=('Helvetica', 15, 'bold')).place(x=60,y=180)
 		labelAccuracy = tk.Label(self.svmFrame, bg="white", text ="Accuracy: "+ str(metrics.accuracy_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=210)
 		labelPrecision = tk.Label(self.svmFrame, bg="white", text ="Precision: "+ str(metrics.precision_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=230)
 		labelRecall = tk.Label(self.svmFrame, bg="white", text ="Recall: "+ str(metrics.recall_score(self.y_test, self.y_pred)), font=('Helvetica', 12)).place(x=60,y=250)	
@@ -1051,25 +1088,70 @@ class LoanPredictor():
 		labelFP = tk.Label(self.svmFrame, bg="white", text ="Majority FP: "+ str(confusion_majority[0][1]), font=('Helvetica', 12)).place(x=60,y=350)
 		labelFN = tk.Label(self.svmFrame, bg="white", text ="Majority FN: "+ str(confusion_majority[1][0]), font=('Helvetica', 12)).place(x=60,y=370)
 		labelTP = tk.Label(self.svmFrame, bg="white", text ="Majority TP: "+ str(confusion_majority[1][1]), font=('Helvetica', 12)).place(x=60,y=390)
-		'''
-		svc = svm.SVC(kernel='rbf', gamma='auto').fit(self.X_train, self.y_train)
-		figure1 = plt.Figure(figsize=(6,6), dpi=60)
+		
+		self.auc_SVM= roc_auc_score(self.y_test, self.prob_SVM)
+		self.prs_SVM= average_precision_score(self.y_test, self.prob_SVM)
+		labelTitle3 = tk.Label(self.svmFrame, bg="white", text ="Curve Scores", font=('Helvetica', 15, 'bold')).place(x=60,y=420)		
+		labelAUC = tk.Label(self.svmFrame, bg="white", text ='ROC Curve: %.2f' % self.auc_SVM, font=('Helvetica', 12)).place(x=60,y=450)
+		labelPRS = tk.Label(self.svmFrame, bg="white", text ='Precision-Recall Curve: %.2f' % self.prs_SVM, font=('Helvetica', 12)).place(x=60,y=470)		
+		
+		figure = plt.Figure(figsize=(6.5,4), dpi=60)
+		ax = figure.add_subplot(111)
+		canvas = FigureCanvasTkAgg(figure,master=self.svmFrame)
+		canvas.draw()
+		canvas.get_tk_widget().place(x=430,y=110)
+		fpr_SVM, tpr_SVM, thresholds_SVM = roc_curve(self.y_test, self.prob_SVM)
+		ax.plot(fpr_SVM, tpr_SVM, 'b', label = 'SVM')
+		ax.plot([0, 1], [0, 1], color='green', linestyle='--')
+		ax.set_xlabel('False Positive Rate')
+		ax.set_ylabel('True Positive Rate')
+		ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		figure1 = plt.Figure(figsize=(6.5,4), dpi=60)
 		ax1 = figure1.add_subplot(111)
-		canvas1 = FigureCanvasTkAgg(figure1,master=self.knnFrame)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.svmFrame)
 		canvas1.draw()
-		canvas1.get_tk_widget().place(x=800,y=150)
-		ax1.scatter(k_range, scores1, label="k")
-		ax1.plot(k_range, scores1, color='green', linestyle='dashed', linewidth=1, markersize=5)
-		ax1.set_xlabel('k')
-		ax1.set_ylabel('Accuracy')
-		ax1.set_title('Accuracy by n_neigbors')
-		ax1.legend(loc = 'upper right')
+		canvas1.get_tk_widget().place(x=430,y=350)
+		prec_SVM, rec_SVM, threshold_SVM = precision_recall_curve(self.y_test, self.prob_SVM)
+		ax1.plot(prec_SVM, rec_SVM, color='orange', label='SVM') 
+		ax1.plot([1, 0], [0.1, 0.1], color='green', linestyle='--')
+		ax1.set_xlabel('Recall')
+		ax1.set_ylabel('Precision')
+		ax1.set_title('Precision-Recall Curve')
+		ax1.legend(loc = 'lower left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		X, y = make_blobs(n_samples=2476, centers=2, random_state=0, cluster_std=0.60)
+		print (clf.support_vectors_)
+		figure2 = plt.Figure(figsize=(6,8), dpi=70)
+		ax2 = figure2.add_subplot(111)
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.svmFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=800,y=60)
+		ax2.scatter(X[:, 0], X[:, 1], c=y, s=50, cmap='autumn')
+		ax2.scatter(clf.support_vectors_[:, 0], clf.support_vectors_[:, 1], c=y, s=50, cmap='autumn')
+		
 		'''
+		xlim = ax2.get_xlim()
+		ylim = ax2.get_ylim()
+
+		xx = np.linspace(xlim[0], xlim[1], 30)
+		yy = np.linspace(ylim[0], ylim[1], 30)
+		YY, XX = np.meshgrid(yy, xx)
+		xy = np.vstack([XX.ravel(), YY.ravel()]).T
+		Z = clf.decision_function(xy).reshape(XX.shape)
+		ax2.contour(XX, YY, Z, colors='k', levels=[-1, 0, 1], alpha=0.5,linestyles=['--', '-', '--'])
+		ax2.set_xlim(xlim)
+		ax2.set_ylim(ylim)
+		'''
+		
 	def runCME(self):
-		self.generateDT()
-		self.generateKNN()
-		self.generateNB()
-		self.generateSVM()
 		self.destroyFrames()
 		self.mlt1Selected.set(False)
 		self.mlt2Selected.set(False)
@@ -1088,12 +1170,63 @@ class LoanPredictor():
 		labelMain = tk.Label(self.cmeFrame, bg="pink", fg="white", text ="Classification Model Evaluation", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.cmeFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		
-		bgCanvas = tk.Canvas(self.cmeFrame, bg="white", width="400",height = "400").place(x=20,y=130)		
-		labelTitle = tk.Label(self.cmeFrame, bg="white", text ="F1 Score of Classification Models", font=('Helvetica', 15, 'bold')).place(x=60,y=260)
-		labelAccuracy = tk.Label(self.cmeFrame, bg="white", text ="Decision Tree: "+ str(self.f1_dt), font=('Helvetica', 12)).place(x=60,y=290)
-		labelPrecision = tk.Label(self.cmeFrame, bg="white", text ="KNN: "+ str(self.f1_knn), font=('Helvetica', 12)).place(x=60,y=310)
-		labelRecall = tk.Label(self.cmeFrame, bg="white", text ="Naive Bayes: "+ str(self.f1_nb), font=('Helvetica', 12)).place(x=60,y=330)	
-		labelF1 = tk.Label(self.cmeFrame, bg="white", text ="SVM: "+ str(self.f1_svm), font=('Helvetica', 12)).place(x=60,y=350)
+		# DT
+		model_DT = DecisionTreeClassifier(max_depth=3)
+		model_DT.fit(self.X_train, self.y_train)
+		self.y_pred = model_DT.predict(self.X_test)
+		
+		self.f1_dt = metrics.f1_score(self.y_test, self.y_pred)		
+		
+		self.prob_DT = model_DT.predict_proba(self.X_test)
+		self.prob_DT = self.prob_DT[:, 1]
+		
+		self.auc_DT= roc_auc_score(self.y_test, self.prob_DT)
+		self.prs_DT= average_precision_score(self.y_test, self.prob_DT)
+		
+		# KNN
+		if self.knnValue.get() == 0:
+			k = 3
+		else:
+			k = self.knnValue.get()
+		knn = neighbors.KNeighborsClassifier(n_neighbors = k, weights = 'uniform')
+		knn.fit(self.X_train, self.y_train)
+		
+		self.y_pred = knn.predict(self.X_test)
+		self.f1_knn = metrics.f1_score(self.y_test, self.y_pred)
+		
+		self.prob_KNN = knn.predict_proba(self.X_test)
+		self.prob_KNN = self.prob_KNN[:, 1]
+		
+		self.auc_KNN= roc_auc_score(self.y_test, self.prob_KNN)
+		self.prs_KNN= average_precision_score(self.y_test, self.prob_KNN)
+		
+		# NB
+		nb = GaussianNB()
+		nb.fit(self.X_train, self.y_train)
+		self.y_pred = nb.predict(self.X_test)
+		
+		self.f1_nb = metrics.f1_score(self.y_test, self.y_pred)
+		
+		self.prob_NB = nb.predict_proba(self.X_test)
+		self.prob_NB= self.prob_NB[:, 1]
+		
+		self.auc_NB= roc_auc_score(self.y_test, self.prob_NB)
+		self.prs_NB= average_precision_score(self.y_test, self.prob_NB)
+		
+		# SVM
+		clf = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
+		#Train the model using the training sets
+		clf.fit(self.X_train, self.y_train)
+
+		#Predict the response for test dataset
+		self.y_pred = clf.predict(self.X_test)
+		self.f1_svm = metrics.f1_score(self.y_test, self.y_pred)
+			
+		self.prob_SVM = clf.predict_proba(self.X_test)
+		self.prob_SVM= self.prob_SVM[:, 1]
+		
+		self.auc_SVM= roc_auc_score(self.y_test, self.prob_SVM)
+		self.prs_SVM= average_precision_score(self.y_test, self.prob_SVM)
 		
 		scores = {'Decision Tree': self.f1_dt, 'KNN': self.f1_knn, 'Naive Bayes': self.f1_nb, 'SVM': self.f1_svm}
 		model = list(scores.keys())
@@ -1106,6 +1239,62 @@ class LoanPredictor():
 		canvas = FigureCanvasTkAgg(figure,master=self.cmeFrame)
 		canvas.draw()
 		canvas.get_tk_widget().place(x=550,y=50)
+		
+		for x,y in zip(model,score):
+
+			label = "{:.2f}".format(y)
+
+			ax.annotate(label,
+						 (x,y), 
+						 textcoords="offset points", 
+						 xytext=(0,5),
+						 ha='center')
+						 
+		
+		figure1 = plt.Figure(figsize=(10,4.5), dpi=60)
+		ax1 = figure1.add_subplot(111)
+		canvas1 = FigureCanvasTkAgg(figure1,master=self.cmeFrame)
+		canvas1.draw()
+		canvas1.get_tk_widget().place(x=0,y=45)
+		fpr_NB, tpr_NB, thresholds_NB = roc_curve(self.y_test, self.prob_NB)
+		fpr_DT, tpr_DT, thresholds_DT = roc_curve(self.y_test, self.prob_DT)
+		fpr_KNN, tpr_KNN, thresholds_KNN = roc_curve(self.y_test, self.prob_KNN)
+		fpr_SVM, tpr_SVM, thresholds_SVM = roc_curve(self.y_test, self.prob_SVM)		
+		ax1.plot(fpr_NB, tpr_NB, color='blue', label = 'NB: %.2f' % self.auc_NB)
+		ax1.plot(fpr_DT, tpr_DT, color='yellow', label = 'DT: %.2f' % self.auc_DT)
+		ax1.plot(fpr_KNN, tpr_KNN, color='red', label = 'KNN: %.2f' % self.auc_KNN)	
+		ax1.plot(fpr_SVM, tpr_SVM, color='green', label = 'SVM: %.2f' % self.auc_SVM)		
+		ax1.plot([0, 1], [0, 1], color='black', linestyle='--')
+		ax1.set_xlabel('False Positive Rate')
+		ax1.set_ylabel('True Positive Rate')
+		ax1.set_title('Receiver Operating Characteristic (ROC) Curve')
+		ax1.legend(loc = 'lower right')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
+		
+		
+		figure2 = plt.Figure(figsize=(10,4.5), dpi=60)
+		ax2 = figure2.add_subplot(111)
+		canvas2 = FigureCanvasTkAgg(figure2,master=self.cmeFrame)
+		canvas2.draw()
+		canvas2.get_tk_widget().place(x=0,y=310)
+		prec_NB, rec_NB, threshold_NB = precision_recall_curve(self.y_test, self.prob_NB)
+		prec_DT, rec_DT, threshold_DT = precision_recall_curve(self.y_test, self.prob_DT)
+		prec_KNN, rec_KNN, threshold_KNN = precision_recall_curve(self.y_test, self.prob_KNN)
+		prec_SVM, rec_SVM, threshold_SVM = precision_recall_curve(self.y_test, self.prob_SVM)		
+		ax2.plot(prec_NB, rec_NB, color='orange', label='NB: %.2f' % self.prs_NB) 
+		ax2.plot(prec_DT, rec_DT, color='green', label='DT: %.2f' % self.prs_DT)
+		ax2.plot(prec_KNN, rec_KNN, color='red', label='KNN: %.2f' % self.prs_KNN)	
+		ax2.plot(prec_SVM, rec_SVM, color='blue', label='SVM: %.2f' % self.prs_SVM)		
+		ax2.plot([1, 0], [0.1, 0.1], color='black', linestyle='--')
+		ax2.set_xlabel('Recall')
+		ax2.set_ylabel('Precision')
+		ax2.set_title('Precision-Recall Curve')
+		ax2.legend(loc = 'upper left')
+		plt.plot([0, 1], [0, 1],'r--')
+		plt.xlim([0, 1])
+		plt.ylim([0, 1])
 
 	# Destroy Existing Frames when new frame is open
 	def destroyFrames(self):
