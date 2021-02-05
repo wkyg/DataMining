@@ -46,6 +46,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import make_classification
 from sklearn.cluster import KMeans 
+import pickle
 		
 class LoanPredictor():
 
@@ -67,6 +68,8 @@ class LoanPredictor():
 		self.propertyType = StringVar()
 		self.cardType = StringVar()
 		self.mthSalary = StringVar()
+		self.exMonth = StringVar()
+		self.noOfLoan = StringVar()		
 		self.loanAmount = ''
 		self.f1_dt = ''
 		self.f1_knn = ''
@@ -80,8 +83,9 @@ class LoanPredictor():
 		self.prs_NB = 0.0
 		self.prs_KNN = 0.0
 		self.prs_SVM = 0.0		
+		#pickle_in = open('classifier.pkl', 'rb') 
+		#self.classifier = pickle.load(pickle_in)
 		self.knnValue = IntVar()
-		self.dictionary = defaultdict(LabelEncoder)
 		self.window = window
 		self.window.title("Bank Loan Predictor")
 		self.window.resizable(False, False)
@@ -146,68 +150,102 @@ class LoanPredictor():
 		self.destroyFrames()
 		self.predictionFrame = tk.Frame(self.window, width=1200, height=600)
 		self.predictionFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.predictionFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
-		labelMain = tk.Label(self.predictionFrame, bg="pink", fg="white", text ="Prediction Model", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
+		canvas = tk.Canvas(self.predictionFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0, column=0)
+		labelMain = tk.Label(self.predictionFrame, bg="SkyBlue3", fg="white", text ="Prediction Model", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.predictionFrame, width="1200",height = "600").grid(row=1, column=0)	
 		# Create Sub-Categories
 		# SubCategory1 = Employment_Type
 		labelSubCat1 = Label(self.predictionFrame, text ="Employment Type", font=('Helvetica', 10), justify=LEFT).place(x=210,y=90)
-		empType1 = Radiobutton(self.predictionFrame, text="Employee", variable=self.employmentType, value="Employee",command=self.saveSelectedValues).place(x=210,y=110)
-		empType2 = Radiobutton(self.predictionFrame, text="Employer", variable=self.employmentType, value="Employer",command=self.saveSelectedValues).place(x=210,y=130)
-		empType3 = Radiobutton(self.predictionFrame, text="Fresh Graduate", variable=self.employmentType, value="Fresh Graduate", command=self.saveSelectedValues).place(x=210,y=150)
-		empType4 = Radiobutton(self.predictionFrame, text="Self Employment", variable=self.employmentType, value="Self Employment", command=self.saveSelectedValues).place(x=210,y=170)			
+		empType1 = Radiobutton(self.predictionFrame, text="Employee", variable=self.employmentType, value="0",command=self.saveSelectedValues).place(x=210,y=110)
+		empType2 = Radiobutton(self.predictionFrame, text="Employer", variable=self.employmentType, value="1",command=self.saveSelectedValues).place(x=210,y=130)
+		empType3 = Radiobutton(self.predictionFrame, text="Fresh Graduate", variable=self.employmentType, value="2", command=self.saveSelectedValues).place(x=210,y=150)
+		empType4 = Radiobutton(self.predictionFrame, text="Self Employment", variable=self.employmentType, value="3", command=self.saveSelectedValues).place(x=210,y=170)	
+		empType5 = Radiobutton(self.predictionFrame, text="Government", variable=self.employmentType, value="4", command=self.saveSelectedValues).place(x=210,y=190)			
 		
 		# SubCategory2 = Credit_Card_types
 		labelSubCat2 = Label(self.predictionFrame, text ="Type of Credit Cards", font=('Helvetica', 10), justify=LEFT).place(x=420,y=90)
-		cardType1 = Radiobutton(self.predictionFrame, text="Normal", variable=self.cardType, value="Normal",command=self.saveSelectedValues).place(x=420,y=110)
-		cardType2 = Radiobutton(self.predictionFrame, text="Gold", variable=self.cardType, value="Gold",command=self.saveSelectedValues).place(x=420,y=130)
-		cardType3 = Radiobutton(self.predictionFrame, text="Platinum", variable=self.cardType, value="Platinum", command=self.saveSelectedValues).place(x=420,y=150)	
+		cardType1 = Radiobutton(self.predictionFrame, text="Normal", variable=self.cardType, value="0",command=self.saveSelectedValues).place(x=420,y=110)
+		cardType2 = Radiobutton(self.predictionFrame, text="Gold", variable=self.cardType, value="1",command=self.saveSelectedValues).place(x=420,y=130)
+		cardType3 = Radiobutton(self.predictionFrame, text="Platinum", variable=self.cardType, value="2", command=self.saveSelectedValues).place(x=420,y=150)	
 		
 		# SubCategory3 = Property_Type
 		labelSubCat3 = Label(self.predictionFrame, text ="Type of Properties", font=('Helvetica', 10), justify=LEFT).place(x=640,y=90) 
-		propertyType1 = Radiobutton(self.predictionFrame, text="Bungalow", variable=self.propertyType, value="Bungalow", command=self.saveSelectedValues).place(x=640,y=110)		
-		propertyType2 = Radiobutton(self.predictionFrame, text="Condominium", variable=self.propertyType, value="Condominium",command=self.saveSelectedValues).place(x=640,y=130)
-		propertyType3 = Radiobutton(self.predictionFrame, text="Flat", variable=self.propertyType, value="Flat",command=self.saveSelectedValues).place(x=640,y=150)
-		propertyType4 = Radiobutton(self.predictionFrame, text="Terrace", variable=self.propertyType, value="Terrace",command=self.saveSelectedValues).place(x=640,y=170)
+		propertyType1 = Radiobutton(self.predictionFrame, text="Bungalow", variable=self.propertyType, value="0", command=self.saveSelectedValues).place(x=640,y=110)		
+		propertyType2 = Radiobutton(self.predictionFrame, text="Condominium", variable=self.propertyType, value="1",command=self.saveSelectedValues).place(x=640,y=130)
+		propertyType3 = Radiobutton(self.predictionFrame, text="Flat", variable=self.propertyType, value="2",command=self.saveSelectedValues).place(x=640,y=150)
+		propertyType4 = Radiobutton(self.predictionFrame, text="Terrace", variable=self.propertyType, value="3",command=self.saveSelectedValues).place(x=640,y=170)
 		
 		# SubCategory4 = Monthly_Salary
 		labelSubCat4 = Label(self.predictionFrame, text ="Monthly Salary (RM)", font=('Helvetica', 10), justify=LEFT).place(x=860,y=90)
-		mthSalary1 = Radiobutton(self.predictionFrame, text="<4,000", variable=self.mthSalary, value="<4,000", command=self.saveSelectedValues).place(x=860,y=110)
-		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="4,000 - 7,000", command=self.saveSelectedValues).place(x=860,y=130)
-		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="7,000 - 10,000", command=self.saveSelectedValues).place(x=860,y=150)
-		mthSalary4 = Radiobutton(self.predictionFrame, text="10,000 - 13,000", variable=self.mthSalary, value="10,000 - 13,000", command=self.saveSelectedValues).place(x=860,y=170)	
+		mthSalary1 = Radiobutton(self.predictionFrame, text="<4,000", variable=self.mthSalary, value="0", command=self.saveSelectedValues).place(x=860,y=110)
+		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="1", command=self.saveSelectedValues).place(x=860,y=130)
+		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="2", command=self.saveSelectedValues).place(x=860,y=150)
+		mthSalary4 = Radiobutton(self.predictionFrame, text="10,000 - 13,000", variable=self.mthSalary, value="3", command=self.saveSelectedValues).place(x=860,y=170)	
 		
+		# SubCategory5 = Credit_Card_Exceed_Months
+		labelSubCat5 = Label(self.predictionFrame, text ="Credit Card Exceed Months", font=('Helvetica', 10), justify=LEFT).place(x=210,y=220)
+		exMonth1 = Radiobutton(self.predictionFrame, text="1", variable=self.exMonth, value="0", command=self.saveSelectedValues).place(x=210,y=240)
+		exMonth2 = Radiobutton(self.predictionFrame, text="2", variable=self.exMonth, value="1", command=self.saveSelectedValues).place(x=210,y=260)
+		exMonth3 = Radiobutton(self.predictionFrame, text="3", variable=self.exMonth, value="2", command=self.saveSelectedValues).place(x=210,y=280)
+		exMonth4 = Radiobutton(self.predictionFrame, text="4", variable=self.exMonth, value="3", command=self.saveSelectedValues).place(x=210,y=300)
+		exMonth5 = Radiobutton(self.predictionFrame, text="5", variable=self.exMonth, value="4", command=self.saveSelectedValues).place(x=260,y=240)
+		exMonth6 = Radiobutton(self.predictionFrame, text="6", variable=self.exMonth, value="5", command=self.saveSelectedValues).place(x=260,y=260)
+		exMonth7 = Radiobutton(self.predictionFrame, text="7", variable=self.exMonth, value="6", command=self.saveSelectedValues).place(x=260,y=280)
+
+		# SubCategory6 = Credit_Card_Exceed_Months
+		labelSubCat6 = Label(self.predictionFrame, text ="Number of Loan to be Approve", font=('Helvetica', 10), justify=LEFT).place(x=420,y=220)
+		noOfLoan1 = Radiobutton(self.predictionFrame, text="1", variable=self.noOfLoan, value="0", command=self.saveSelectedValues).place(x=420,y=240)
+		noOfLoan2 = Radiobutton(self.predictionFrame, text="2", variable=self.noOfLoan, value="1", command=self.saveSelectedValues).place(x=420,y=260)
+		noOfLoan3 = Radiobutton(self.predictionFrame, text="3", variable=self.noOfLoan, value="2", command=self.saveSelectedValues).place(x=420,y=280)
+	
 		resetBtn = Button(self.predictionFrame, text ="Reset", command=self.resetButtonOnClicked).place(x=450,y=500, height=50, width=150) 	
 		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=600,y=500, height=50, width=150)
 		
+	# defining the function which will make the prediction using the data which the user inputs 
+	def prediction(self, EmploymentType, CardType, PropertyType, MonthSalary, ExMonth, NoOfLoan):   
+	 
+		# Making predictions 
+		prediction = self.classifier.predict([[EmploymentType, CardType, PropertyType, MonthSalary, ExMonth, NoOfLoan]])
+		print ('Prediction: ' + str(prediction))
+		 
+		if prediction == 1:
+			pred = 'rejected'
+			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, fg='red', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=630,y=450)
+		else:
+			pred = 'approved'	
+			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, fg='green', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=645,y=450)			
 		
 	# Prediction Button On Clicked
 	def predictionButtonOnClicked(self):
-		print('yeet')
-		if (self.employmentType.get() == None or self.cardType.get() == None or self.propertyType.get() == None or self.mthSalary.get() == None):
-			print ('Select the criteria for prediction first!')
-		else:
-			X_train, X_test, y_train, y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
-			model = svm.SVC(kernel='rbf', gamma='auto', random_state = 1, probability=True)
-			model.fit(X_train, y_train)
-
-			input=pd.DataFrame([[self.employmentType.get(),self.cardType.get(),self.propertyType.get(),self.mthSalary.get()]], columns=['Employment_Type','Credit_Card_types', 'Property_Type', 'Monthly_Salary'])
-			input = input.astype({'Monthly_Salary':'category'}, copy=False)
-			
-			input = input.apply(lambda x: self.dictionary[x.name].fit_transform(x))
-			print (input)
-			prediction = model.predict(input)
-			prediction = self.dictionary['Decision'].inverse_transform(prediction)
-			
-			print('The bank has ' + str(prediction[0]) + 'ed the loan application.')
-					
-			labelPrediction = Label(self.predictionFrame, text ='The bank has ' + str(prediction[0]) + 'ed the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=450,y=450)
+		#self.prediction(self.employmentType.get(), self.cardType.get(), self.propertyType.get(), self.mthSalary.get(), self.exMonth.get(), self.noOfLoan.get()) 
 		
+		input=pd.DataFrame(np.array([[self.employmentType.get(), self.cardType.get(), self.propertyType.get(), self.mthSalary.get(), self.exMonth.get(), self.noOfLoan.get()]]), columns=['Employment_Type', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary', 'Credit_Card_Exceed_Months', 'Number_of_Loan_to_Approve'])
+		input = input.astype({'Monthly_Salary':'category', 'Credit_Card_Exceed_Months': 'int64', 'Number_of_Loan_to_Approve' : 'int64'}, copy=False)
+		
+		input = input.apply(lambda x: self.dictionary[x.name].fit_transform(x))
+		prediction = self.model.predict(input)
+		prediction = self.dictionary['Decision'].inverse_transform(prediction)
+		
+		print (prediction[0])
+		
+		if str(prediction[0]) == 'Reject':
+			pred = 'rejected'
+			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, fg='red', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=630,y=450)
+		else:
+			pred = 'accepted'	
+			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, fg='green', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
+			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=645,y=450)	
+				
 	def saveSelectedValues(self):
-		print (self.employmentType.get() + "\n" + 
-			   self.cardType.get() + "\n" +
-			   self.propertyType.get() + "\n" +		
-			   self.mthSalary.get() + "\n")
+		#print (self.employmentType.get() + "\n" + self.cardType.get() + "\n" + self.propertyType.get() + "\n" + self.mthSalary.get() + "\n")
+		pass
 		
 	def dataPreprocess(self):
 		# Load Data
@@ -217,9 +255,6 @@ class LoanPredictor():
 		
 		# Duplicate the dataframe
 		df1 = df.copy()
-		
-		# Drop the unknown column ("...") 
-		df1.drop(df1.iloc[:,10:11], inplace=True, axis=1)
 		
 		# Check missing values
 		df1.isnull().sum()
@@ -277,11 +312,18 @@ class LoanPredictor():
 		self.df2['Monthly_Salary'] = np.where(df1['Monthly_Salary'].between(4000.0,7000.0), '4000-7000', self.df2['Monthly_Salary'])
 		self.df2['Monthly_Salary'] = np.where(df1['Monthly_Salary'].between(7000.0,10000.0), '7000-10000', self.df2['Monthly_Salary'])
 		self.df2['Monthly_Salary'] = np.where(df1['Monthly_Salary'].between(10000.0,13000.0), '10000-13000', self.df2['Monthly_Salary'])
-		self.df2['Monthly_Salary'] = self.df2['Monthly_Salary'].astype("category")
+		self.df2['Monthly_Salary'] = self.df2['Monthly_Salary'].astype("category")	
 		
+		self.df2['Employment_Type']= self.df2['Employment_Type'].map({'Employee':0, 'Employer':1, 'Fresh Graduate':2, 'Self Employment':3, 'Government':4})
+		self.df2['Credit_Card_types']= self.df2['Credit_Card_types'].map({'Normal':0, 'Gold':1, 'Platinum':2})
+		self.df2['Property_Type']= self.df2['Property_Type'].map({'Bungalow':0, 'Condominium':1, 'Flat':2, 'Terrace':3})
+		self.df2['Monthly_Salary']= self.df2['Monthly_Salary'].map({'<4000':0, '4000-7000':1, '7000-10000':2, '10000-13000':3})		
+		
+		print (self.df2.head())
 		#Applying SMOTE based on Decision
 		self.df3 = self.df2.copy()
 
+		self.dictionary = defaultdict(LabelEncoder)
 		self.df3 = self.df2.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 
 		y = self.df3.Decision
@@ -298,14 +340,27 @@ class LoanPredictor():
 		# Remove the features with lowest ranking after performing Feature Selection (Boruta and RFE)
 		self.X_res.drop(columns=["Number_of_Properties","Loan_Amount"], axis=1, inplace=True)
 		
-		# Machine Learning Techiniques
-		# Support Vector Machine (SVM)
 		self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
-		print('X_train')
-		print (self.X_train)
 		self.dictionary1 = defaultdict(LabelEncoder)
 		self.dfSmote1 = self.dfSmote.apply(lambda x: self.dictionary1[x.name].fit_transform(x))
 	
+		X1 = self.dfSmote1[['Employment_Type', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary', 'Credit_Card_Exceed_Months', 'Number_of_Loan_to_Approve']]
+		y1 = self.dfSmote1.Decision
+		print (X1.shape, y1.shape)
+		print (X1)
+		print (y1)
+		
+		# Train the data for prediction model
+		X_train_pm, X_test_pm, y_train_pm, y_test_pm = train_test_split(X1, y1, test_size=0.3,random_state=1)
+		self.model = GaussianNB()
+		self.model.fit(X_train_pm, y_train_pm)
+		y_pred_pm = self.model.predict(X_test_pm)
+		'''
+		pickle_out = open("classifier.pkl", mode = "wb") 
+		pickle.dump(model, pickle_out) 
+		pickle_out.close()
+		'''
+		
 	# Visualizing Comparison Charts from Exploratory Data Analysis (Before SMOTE and after SMOTE)
 	def runDf2(self):
 		self.destroyFrames()
@@ -322,8 +377,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.b4SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.b4SmoteFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.b4SmoteFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.b4SmoteFrame, bg="pink", fg="white", text ="EDA (Before SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.b4SmoteFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.b4SmoteFrame, bg="SkyBlue3", fg="white", text ="EDA (Before SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.b4SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
 		
 		# which type of employment is likely to have the loan accepted?
@@ -427,8 +482,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.SmoteFrame = tk.Frame(self.window, width=1200, height=600)
 		self.SmoteFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.SmoteFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.SmoteFrame, bg="pink", fg="white", text ="EDA (After SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.SmoteFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.SmoteFrame, bg="SkyBlue3", fg="white", text ="EDA (After SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
 		
 		# which type of employment is likely to have the loan accepted?
@@ -535,13 +590,14 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.armFrame = tk.Frame(self.window, width=1200, height=600)
 		self.armFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.armFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.armFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.armFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.armFrame, bg="SkyBlue3", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.armFrame, width="1200",height = "600").grid(row=1, column=0)
 
 		self.df4 = self.df3.copy()
+		self.dictdf4 = defaultdict(LabelEncoder)
 		self.df4.drop(axis= 1, inplace = True, columns = ['Decision','Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
-		self.df4 = self.df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
+		self.df4 = self.df4.apply(lambda x: self.dictdf4[x.name].inverse_transform(x))
 		
 		self.minSuppValue = DoubleVar()
 		self.minConfValue = DoubleVar()
@@ -575,16 +631,14 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.genArmFrame = tk.Frame(self.window, width=1200, height=600)
 		self.genArmFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.genArmFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.genArmFrame, bg="pink", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.genArmFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.genArmFrame, bg="SkyBlue3", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.genArmFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
 		resetBtn = Button(self.genArmFrame, text="Reset", command=self.runARM).place(x=200,y=530, height=50, width=150)
 
 		records = []
 		for i in range(0, 2350):
 			records.append([str(self.df4.values[i,j]) for j in range(0, 4)])
-		
-		print (records)
 		
 		association_rules = apriori(records, min_support=self.minSuppValue.get(), min_confidence=self.minConfValue.get(), min_lift=self.minLiftValue.get(), min_length=2)
 		
@@ -635,7 +689,6 @@ class LoanPredictor():
 		dfSupp = pd.DataFrame(support, columns=['Support']) 
 		dfConf = pd.DataFrame(confidence, columns=['Confidence']) 		
 		dfArm = pd.concat([dfSupp.reset_index(drop=True), dfConf], axis=1)
-		print (dfArm)
 		
 		figure = plt.Figure(figsize=(6,6), dpi=90)
 		ax = figure.add_subplot(111)
@@ -668,8 +721,8 @@ class LoanPredictor():
 		self.kmcSelected.set(True)
 		self.kmcFrame = tk.Frame(self.window, width=1200, height=600)
 		self.kmcFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.kmcFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.kmcFrame, bg="pink", fg="white", text ="K Modes Clustering", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.kmcFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.kmcFrame, bg="SkyBlue3", fg="white", text ="K Modes Clustering", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.kmcFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
 		
 		self.df5 = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1)
@@ -692,12 +745,11 @@ class LoanPredictor():
 		ax.legend()
 		ax.set_title('Finding the Elbow for K')
 		
-		print('done')
-		
 		# Chosen cluster = 2, because it is the elbow
 		km = KModes(n_clusters=2, init = "Cao", n_init = 1, verbose=1)
 		clusters = km.fit_predict(self.df5)
-		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
+		self.dictdf5 = defaultdict(LabelEncoder)
+		self.df5 = self.df5.apply(lambda x: self.dictdf5[x.name].inverse_transform(x))
 		
 		clusters_df = pd.DataFrame(clusters)
 		clusters_df.columns = ['Cluster']
@@ -777,8 +829,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.dtFrame = tk.Frame(self.window, width=1200, height=600)
 		self.dtFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.dtFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
-		labelMain = tk.Label(self.dtFrame, bg="pink", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
+		canvas = tk.Canvas(self.dtFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0, column=0)
+		labelMain = tk.Label(self.dtFrame, bg="SkyBlue3", fg="white", text ="Decision Tree Classifier", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.dtFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)		
 		dtButton = Button(self.dtFrame, text ="Generate Decision Tree", command=self.generateDT).place(x=530,y=50, height=50, width=150)
 		
@@ -861,8 +913,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.knnFrame = tk.Frame(self.window, width=1200, height=600)
 		self.knnFrame.place(x=0,y=0)	
-		canvas = tk.Canvas(self.knnFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
-		labelMain = tk.Label(self.knnFrame, bg="pink", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
+		canvas = tk.Canvas(self.knnFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0, column=0)
+		labelMain = tk.Label(self.knnFrame, bg="SkyBlue3", fg="white", text ="K-Nearest Neighbour", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.knnFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)	
 		knnSelector = tk.Scale(self.knnFrame, bg='white', from_=1, to=9, orient=HORIZONTAL, variable=self.knnValue).place(x=455,y=50, height=50, width=150)		
 		knnButton = Button(self.knnFrame, text ="Generate K-NN", command=self.generateKNN).place(x=615,y=50, height=50, width=150)
@@ -972,8 +1024,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)		
 		self.nbFrame = tk.Frame(self.window, width=1200, height=600)
 		self.nbFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.nbFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
-		labelMain = tk.Label(self.nbFrame, bg="pink", fg="white", text ="Naive Bayes", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
+		canvas = tk.Canvas(self.nbFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0, column=0)
+		labelMain = tk.Label(self.nbFrame, bg="SkyBlue3", fg="white", text ="Naive Bayes", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.nbFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		nbButton = Button(self.nbFrame, text ="Generate Naive Bayes", command=self.generateNB).place(x=530,y=50, height=50, width=150)
 	
@@ -1056,8 +1108,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.svmFrame = tk.Frame(self.window, width=1200, height=600)
 		self.svmFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.svmFrame, bg="pink",width="1200",height = "40").grid(row=0, column=0)
-		labelMain = tk.Label(self.svmFrame, bg="pink", fg="white", text ="Support Vector Machine", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
+		canvas = tk.Canvas(self.svmFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0, column=0)
+		labelMain = tk.Label(self.svmFrame, bg="SkyBlue3", fg="white", text ="Support Vector Machine", font=('Helvetica', 15, 'bold')).grid(row=0, column=0)
 		emptyCanvas = tk.Canvas(self.svmFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		svmButton = Button(self.svmFrame, text ="Generate SVM", command=self.generateSVM).place(x=530,y=50, height=50, width=150)
 		
@@ -1128,7 +1180,6 @@ class LoanPredictor():
 		plt.ylim([0, 1])
 		
 		X, y = make_blobs(n_samples=2476, centers=2, random_state=0, cluster_std=0.60)
-		print (clf.support_vectors_)
 		figure2 = plt.Figure(figsize=(6,8), dpi=70)
 		ax2 = figure2.add_subplot(111)
 		canvas2 = FigureCanvasTkAgg(figure2,master=self.svmFrame)
@@ -1166,8 +1217,8 @@ class LoanPredictor():
 		self.kmcSelected.set(False)
 		self.cmeFrame = tk.Frame(self.window, width=1200, height=600)
 		self.cmeFrame.place(x=0,y=0)
-		canvas = tk.Canvas(self.cmeFrame, bg="pink",width="1200",height = "40").grid(row=0,column=0)
-		labelMain = tk.Label(self.cmeFrame, bg="pink", fg="white", text ="Classification Model Evaluation", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
+		canvas = tk.Canvas(self.cmeFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
+		labelMain = tk.Label(self.cmeFrame, bg="SkyBlue3", fg="white", text ="Classification Model Evaluation", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.cmeFrame, bg="white", width="1200",height = "600").grid(row=1, column=0)
 		
 		# DT
