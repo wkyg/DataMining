@@ -46,7 +46,6 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import make_classification
 from sklearn.cluster import KMeans 
-import pickle
 		
 class LoanPredictor():
 
@@ -68,8 +67,6 @@ class LoanPredictor():
 		self.propertyType = StringVar()
 		self.cardType = StringVar()
 		self.mthSalary = StringVar()
-		self.exMonth = StringVar()
-		self.noOfLoan = StringVar()		
 		self.loanAmount = ''
 		self.f1_dt = ''
 		self.f1_knn = ''
@@ -82,7 +79,8 @@ class LoanPredictor():
 		self.prs_DT = 0.0
 		self.prs_NB = 0.0
 		self.prs_KNN = 0.0
-		self.prs_SVM = 0.0		
+		self.prs_SVM = 0.0	
+		self.dictionary = defaultdict(LabelEncoder)
 		#pickle_in = open('classifier.pkl', 'rb') 
 		#self.classifier = pickle.load(pickle_in)
 		self.knnValue = IntVar()
@@ -181,50 +179,16 @@ class LoanPredictor():
 		mthSalary2 = Radiobutton(self.predictionFrame, text="4,000 - 7,000", variable=self.mthSalary, value="1", command=self.saveSelectedValues).place(x=860,y=130)
 		mthSalary3 = Radiobutton(self.predictionFrame, text="7,000 - 10,000", variable=self.mthSalary, value="2", command=self.saveSelectedValues).place(x=860,y=150)
 		mthSalary4 = Radiobutton(self.predictionFrame, text="10,000 - 13,000", variable=self.mthSalary, value="3", command=self.saveSelectedValues).place(x=860,y=170)	
-		
-		# SubCategory5 = Credit_Card_Exceed_Months
-		labelSubCat5 = Label(self.predictionFrame, text ="Credit Card Exceed Months", font=('Helvetica', 10), justify=LEFT).place(x=210,y=220)
-		exMonth1 = Radiobutton(self.predictionFrame, text="1", variable=self.exMonth, value="0", command=self.saveSelectedValues).place(x=210,y=240)
-		exMonth2 = Radiobutton(self.predictionFrame, text="2", variable=self.exMonth, value="1", command=self.saveSelectedValues).place(x=210,y=260)
-		exMonth3 = Radiobutton(self.predictionFrame, text="3", variable=self.exMonth, value="2", command=self.saveSelectedValues).place(x=210,y=280)
-		exMonth4 = Radiobutton(self.predictionFrame, text="4", variable=self.exMonth, value="3", command=self.saveSelectedValues).place(x=210,y=300)
-		exMonth5 = Radiobutton(self.predictionFrame, text="5", variable=self.exMonth, value="4", command=self.saveSelectedValues).place(x=260,y=240)
-		exMonth6 = Radiobutton(self.predictionFrame, text="6", variable=self.exMonth, value="5", command=self.saveSelectedValues).place(x=260,y=260)
-		exMonth7 = Radiobutton(self.predictionFrame, text="7", variable=self.exMonth, value="6", command=self.saveSelectedValues).place(x=260,y=280)
-
-		# SubCategory6 = Credit_Card_Exceed_Months
-		labelSubCat6 = Label(self.predictionFrame, text ="Number of Loan to be Approve", font=('Helvetica', 10), justify=LEFT).place(x=420,y=220)
-		noOfLoan1 = Radiobutton(self.predictionFrame, text="1", variable=self.noOfLoan, value="0", command=self.saveSelectedValues).place(x=420,y=240)
-		noOfLoan2 = Radiobutton(self.predictionFrame, text="2", variable=self.noOfLoan, value="1", command=self.saveSelectedValues).place(x=420,y=260)
-		noOfLoan3 = Radiobutton(self.predictionFrame, text="3", variable=self.noOfLoan, value="2", command=self.saveSelectedValues).place(x=420,y=280)
 	
 		resetBtn = Button(self.predictionFrame, text ="Reset", command=self.resetButtonOnClicked).place(x=450,y=500, height=50, width=150) 	
-		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=600,y=500, height=50, width=150)
-		
-	# defining the function which will make the prediction using the data which the user inputs 
-	def prediction(self, EmploymentType, CardType, PropertyType, MonthSalary, ExMonth, NoOfLoan):   
-	 
-		# Making predictions 
-		prediction = self.classifier.predict([[EmploymentType, CardType, PropertyType, MonthSalary, ExMonth, NoOfLoan]])
-		print ('Prediction: ' + str(prediction))
-		 
-		if prediction == 1:
-			pred = 'rejected'
-			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
-			labelPrediction = tk.Label(self.predictionFrame, fg='red', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
-			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=630,y=450)
-		else:
-			pred = 'approved'	
-			labelPrediction = tk.Label(self.predictionFrame, text ='The bank has ', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=415,y=450)
-			labelPrediction = tk.Label(self.predictionFrame, fg='green', text = str(pred), font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=550,y=450)
-			labelPrediction = tk.Label(self.predictionFrame, text =' the loan application.', font=('Helvetica', 15, 'bold'), justify=LEFT).place(x=645,y=450)			
+		predictBtn = Button(self.predictionFrame, text ="Predict Now", command=self.predictionButtonOnClicked).place(x=600,y=500, height=50, width=150)	
 		
 	# Prediction Button On Clicked
 	def predictionButtonOnClicked(self):
 		#self.prediction(self.employmentType.get(), self.cardType.get(), self.propertyType.get(), self.mthSalary.get(), self.exMonth.get(), self.noOfLoan.get()) 
 		
-		input=pd.DataFrame(np.array([[self.employmentType.get(), self.cardType.get(), self.propertyType.get(), self.mthSalary.get(), self.exMonth.get(), self.noOfLoan.get()]]), columns=['Employment_Type', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary', 'Credit_Card_Exceed_Months', 'Number_of_Loan_to_Approve'])
-		input = input.astype({'Monthly_Salary':'category', 'Credit_Card_Exceed_Months': 'int64', 'Number_of_Loan_to_Approve' : 'int64'}, copy=False)
+		input=pd.DataFrame(np.array([[self.employmentType.get(), self.cardType.get(), self.propertyType.get(), self.mthSalary.get()]]), columns=['Employment_Type', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary'])
+		input = input.astype({'Monthly_Salary':'category'}, copy=False)
 		
 		input = input.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 		prediction = self.model.predict(input)
@@ -314,18 +278,16 @@ class LoanPredictor():
 		self.df2['Monthly_Salary'] = np.where(df1['Monthly_Salary'].between(10000.0,13000.0), '10000-13000', self.df2['Monthly_Salary'])
 		self.df2['Monthly_Salary'] = self.df2['Monthly_Salary'].astype("category")	
 		
-		self.df2['Employment_Type']= self.df2['Employment_Type'].map({'Employee':0, 'Employer':1, 'Fresh Graduate':2, 'Self Employment':3, 'Government':4})
-		self.df2['Credit_Card_types']= self.df2['Credit_Card_types'].map({'Normal':0, 'Gold':1, 'Platinum':2})
-		self.df2['Property_Type']= self.df2['Property_Type'].map({'Bungalow':0, 'Condominium':1, 'Flat':2, 'Terrace':3})
-		self.df2['Monthly_Salary']= self.df2['Monthly_Salary'].map({'<4000':0, '4000-7000':1, '7000-10000':2, '10000-13000':3})		
-		
-		print (self.df2.head())
 		#Applying SMOTE based on Decision
 		self.df3 = self.df2.copy()
-
-		self.dictionary = defaultdict(LabelEncoder)
-		self.df3 = self.df2.apply(lambda x: self.dictionary[x.name].fit_transform(x))
-
+		
+		self.df3['Employment_Type']= self.df3['Employment_Type'].map({'Employee':0, 'Employer':1, 'Fresh Graduate':2, 'Self Employment':3, 'Government':4})
+		self.df3['Credit_Card_types']= self.df3['Credit_Card_types'].map({'Normal':0, 'Gold':1, 'Platinum':2})
+		self.df3['Property_Type']= self.df3['Property_Type'].map({'Bungalow':0, 'Condominium':1, 'Flat':2, 'Terrace':3})
+		self.df3['Monthly_Salary']= self.df3['Monthly_Salary'].map({'<4000':0, '4000-7000':1, '7000-10000':2, '10000-13000':3})	
+		
+		self.df3 = self.df3.apply(lambda x: self.dictionary[x.name].fit_transform(x))
+		
 		y = self.df3.Decision
 		X = self.df3.drop(columns =['Decision'])
 		
@@ -335,31 +297,23 @@ class LoanPredictor():
 		
 		# Exploratory Data Analysis after SMOTE (Based on Decision)
 		self.dfSmote = pd.concat([self.X_res.reset_index(drop=True), self.y_res], axis=1) 
+		self.dfSmote = self.dfSmote.apply(lambda x: self.dictionary[x.name].fit_transform(x))		
 		self.dfSmote = self.dfSmote.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		# Remove the features with lowest ranking after performing Feature Selection (Boruta and RFE)
 		self.X_res.drop(columns=["Number_of_Properties","Loan_Amount"], axis=1, inplace=True)
 		
 		self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X_res, self.y_res, test_size=0.3,random_state=1)
-		self.dictionary1 = defaultdict(LabelEncoder)
-		self.dfSmote1 = self.dfSmote.apply(lambda x: self.dictionary1[x.name].fit_transform(x))
+		self.dfSmote1 = self.dfSmote.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 	
 		X1 = self.dfSmote1[['Employment_Type', 'Credit_Card_types', 'Property_Type', 'Monthly_Salary', 'Credit_Card_Exceed_Months', 'Number_of_Loan_to_Approve']]
 		y1 = self.dfSmote1.Decision
-		print (X1.shape, y1.shape)
-		print (X1)
-		print (y1)
 		
 		# Train the data for prediction model
 		X_train_pm, X_test_pm, y_train_pm, y_test_pm = train_test_split(X1, y1, test_size=0.3,random_state=1)
 		self.model = GaussianNB()
 		self.model.fit(X_train_pm, y_train_pm)
 		y_pred_pm = self.model.predict(X_test_pm)
-		'''
-		pickle_out = open("classifier.pkl", mode = "wb") 
-		pickle.dump(model, pickle_out) 
-		pickle_out.close()
-		'''
 		
 	# Visualizing Comparison Charts from Exploratory Data Analysis (Before SMOTE and after SMOTE)
 	def runDf2(self):
@@ -379,93 +333,77 @@ class LoanPredictor():
 		self.b4SmoteFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.b4SmoteFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.b4SmoteFrame, bg="SkyBlue3", fg="white", text ="EDA (Before SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.b4SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
-		
+		emptyCanvas = tk.Canvas(self.b4SmoteFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
+
 		# which type of employment is likely to have the loan accepted?
-		typeOfEmploy = DataFrame(self.df3, columns=['Employment_Type','Decision'])
-		
-		figure = plt.Figure(figsize=(5,5), dpi=50)
+		figure = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.b4SmoteFrame)
 		canvas.draw()
-		canvas.get_tk_widget().place(x=10,y=60)
-		typeOfEmploy = typeOfEmploy[['Employment_Type', 'Decision']].groupby('Employment_Type').sum()
-		typeOfEmploy.plot(kind='bar', legend=True, ax=ax)
-		ax.set_title('Type of employment to have the loan accepted')
-		
+		canvas.get_tk_widget().place(x=0,y=45)
+		b = sns.countplot(x=self.df2['Employment_Type'],order=self.df2['Employment_Type'].value_counts().index,hue=self.df2['Decision'], ax=ax)
+		for p in b.patches:
+			b.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax.set_title('Employment type to have the loan accepted')
+						 
 		# which type of credit card user is likely to have the loan accepted?
-		typeOfCard = DataFrame(self.df3, columns=['Credit_Card_types','Decision'])
-		
-		figure1 = plt.Figure(figsize=(5,5), dpi=50)
+		figure1 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax1 = figure1.add_subplot(111)
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.b4SmoteFrame)
 		canvas1.draw()
-		canvas1.get_tk_widget().place(x=270,y=60)
-		typeOfCard = typeOfCard[['Credit_Card_types', 'Decision']].groupby('Credit_Card_types').sum()
-		typeOfCard.plot(kind='bar', legend=True, ax=ax1)
-		ax1.set_title('Type of credit card user to have the loan accepted')	
+		canvas1.get_tk_widget().place(x=410,y=45)
+		b1 = sns.countplot(x=self.df2['Credit_Card_types'],order=self.df2['Credit_Card_types'].value_counts().index,hue=self.df2['Decision'], ax=ax1)
+		for p in b1.patches:
+			b1.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax1.set_title('Type of credit card to have the loan accepted')
 
 		# which type of properties is likely to have the loan accepted?
-		typeOfProperty = DataFrame(self.df3, columns=['Property_Type','Decision'])
-		
-		figure2 = plt.Figure(figsize=(5,5), dpi=50)
+		figure2 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax2 = figure2.add_subplot(111)
 		canvas2 = FigureCanvasTkAgg(figure2,master=self.b4SmoteFrame)
 		canvas2.draw()
-		canvas2.get_tk_widget().place(x=530,y=60)
-		typeOfProperty = typeOfProperty[['Property_Type', 'Decision']].groupby('Property_Type').sum()
-		typeOfProperty.plot(kind='bar', legend=True, ax=ax2)
+		canvas2.get_tk_widget().place(x=0,y=300)
+		b2 = sns.countplot(x=self.df2['Property_Type'],order=self.df2['Property_Type'].value_counts().index,hue=self.df2['Decision'], ax=ax2)
+		for p in b2.patches:
+			b2.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
 		ax2.set_title('Type of properties to have the loan accepted')		
 		
 		# what is the monthly salary that is likely to have the loan accepted?
-		monthlySalary = DataFrame(self.df3, columns=['Monthly_Salary','Decision'])
-		
-		figure3 = plt.Figure(figsize=(5,5), dpi=50)
+		figure3 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax3 = figure3.add_subplot(111)
 		canvas3 = FigureCanvasTkAgg(figure3,master=self.b4SmoteFrame)
 		canvas3.draw()
-		canvas3.get_tk_widget().place(x=10,y=320)
-		monthlySalary  = monthlySalary[['Monthly_Salary', 'Decision']].groupby('Monthly_Salary').sum()
-		monthlySalary.plot(kind='bar', legend=True, ax=ax3)
+		canvas3.get_tk_widget().place(x=410,y=300)
+		b3 = sns.countplot(x=self.df2['Monthly_Salary'],order=self.df2['Monthly_Salary'].value_counts().index,hue=self.df2['Decision'], ax=ax3)
+		for p in b3.patches:
+			b3.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
 		ax3.set_title('Monthly salary to have the loan accepted')	
-
-		# Count the number of customers by Decision and Employment_Type
-		employVsDecision = DataFrame(self.df3, columns=['Employment_Type','Decision'])
 		
-		figure4 = plt.Figure(figsize=(5,5), dpi=50)
+		# what is the decision made by the bank the most frequent?
+		figure4 = plt.Figure(figsize=(8,10.5), dpi=50)
 		ax4 = figure4.add_subplot(111)
 		canvas4 = FigureCanvasTkAgg(figure4,master=self.b4SmoteFrame)
 		canvas4.draw()
-		canvas4.get_tk_widget().place(x=270,y=320)
-		employVsDecision  = employVsDecision[['Employment_Type', 'Decision']].groupby('Decision').sum()
-		employVsDecision.plot(kind='bar', legend=True, ax=ax4)
-		ax4.set_title('Number of customers by Decision and Employment_Type')	
-		
-		# what is the monthly salary that is likely to have the loan accepted?
-		salaryVsDecision = DataFrame(self.df3, columns=['Monthly_Salary','Decision'])
-		
-		figure5 = plt.Figure(figsize=(5,5), dpi=50)
-		ax5 = figure5.add_subplot(111)
-		canvas5 = FigureCanvasTkAgg(figure5,master=self.b4SmoteFrame)
-		canvas5.draw()
-		canvas5.get_tk_widget().place(x=530,y=320)
-		salaryVsDecision  = salaryVsDecision[['Monthly_Salary', 'Decision']].groupby('Decision').sum()
-		salaryVsDecision.plot(kind='bar', legend=True, ax=ax5)
-		ax5.set_title('Number of customers by Decision and Monthly_Salary')	
-		
-		# what is the decision made by the bank the most frequent?
-		decision = DataFrame(self.df2, columns=['Decision'])
-	
-		figure6 = plt.Figure(figsize=(8,10), dpi=50)
-		ax6 = figure6.add_subplot(111)
-		canvas6 = FigureCanvasTkAgg(figure6,master=self.b4SmoteFrame)
-		canvas6.draw()
-		canvas6.get_tk_widget().place(x=790,y=65)
-
-		decision['Decision'].value_counts().plot(kind='bar', legend=True, ax=ax6, color=tuple(["g", "r","b","y","k"]))
-		ax6.set_title('Most frequent decision made by the bank')
-		ax6.set_xlabel('Decision')		
-
+		canvas4.get_tk_widget().place(x=810,y=45)
+		b4 = sns.countplot(x='Decision', data = self.df2, ax=ax4)
+		for p in b4.patches:
+			b4.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax4.set_title('Most frequent decision made by the bank')		
 		
 	def runDfSmote(self):
 		self.destroyFrames()
@@ -484,95 +422,77 @@ class LoanPredictor():
 		self.SmoteFrame.place(x=0,y=0)
 		canvas = tk.Canvas(self.SmoteFrame, bg="SkyBlue3",width="1200",height = "40").grid(row=0,column=0)
 		labelMain = tk.Label(self.SmoteFrame, bg="SkyBlue3", fg="white", text ="EDA (After SMOTE)", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
-		emptyCanvas = tk.Canvas(self.SmoteFrame, width="1200",height = "600").grid(row=1, column=0)
+		emptyCanvas = tk.Canvas(self.SmoteFrame, bg='white', width="1200",height = "600").grid(row=1, column=0)
 		
 		# which type of employment is likely to have the loan accepted?
-		typeOfEmploy = DataFrame(self.dfSmote1, columns=['Employment_Type','Decision'])
-		
-		figure = plt.Figure(figsize=(5,5), dpi=50)
+		figure = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax = figure.add_subplot(111)
 		canvas = FigureCanvasTkAgg(figure,master=self.SmoteFrame)
 		canvas.draw()
-		canvas.get_tk_widget().place(x=10,y=60)
-		typeOfEmploy['Employment_Type'].value_counts().plot(kind='bar', legend=True, ax=ax)
-		ax.set_title('Type of employment to have the loan accepted')
-		ax.legend(["Employer", "Self-Employed", "Government", "Employee", "Fresh Graduate"])
-	
+		canvas.get_tk_widget().place(x=0,y=45)
+		b = sns.countplot(x=self.dfSmote['Employment_Type'],order=self.dfSmote['Employment_Type'].value_counts().index,hue=self.dfSmote['Decision'], ax=ax)
+		for p in b.patches:
+			b.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax.set_title('Employment type to have the loan accepted')
+						 
 		# which type of credit card user is likely to have the loan accepted?
-		typeOfCard = DataFrame(self.dfSmote1, columns=['Credit_Card_types','Decision'])
-		
-		figure1 = plt.Figure(figsize=(5,5), dpi=50)
+		figure1 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax1 = figure1.add_subplot(111)
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.SmoteFrame)
 		canvas1.draw()
-		canvas1.get_tk_widget().place(x=270,y=60)
-		typeOfCard = typeOfCard[['Credit_Card_types', 'Decision']].groupby('Credit_Card_types').sum()
-		typeOfCard.plot(kind='bar', legend=True, ax=ax1)
-		ax1.set_title('Type of credit card user to have the loan accepted')	
+		canvas1.get_tk_widget().place(x=410,y=45)
+		b1 = sns.countplot(x=self.dfSmote['Credit_Card_types'],order=self.dfSmote['Credit_Card_types'].value_counts().index,hue=self.dfSmote['Decision'], ax=ax1)
+		for p in b1.patches:
+			b1.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax1.set_title('Type of credit card to have the loan accepted')
 
 		# which type of properties is likely to have the loan accepted?
-		typeOfProperty = DataFrame(self.dfSmote1, columns=['Property_Type','Decision'])
-		
-		figure2 = plt.Figure(figsize=(5,5), dpi=50)
+		figure2 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax2 = figure2.add_subplot(111)
 		canvas2 = FigureCanvasTkAgg(figure2,master=self.SmoteFrame)
 		canvas2.draw()
-		canvas2.get_tk_widget().place(x=530,y=60)
-		typeOfProperty = typeOfProperty[['Property_Type', 'Decision']].groupby('Property_Type').sum()
-		typeOfProperty.plot(kind='bar', legend=True, ax=ax2)
+		canvas2.get_tk_widget().place(x=0,y=300)
+		b2 = sns.countplot(x=self.dfSmote['Property_Type'],order=self.dfSmote['Property_Type'].value_counts().index,hue=self.dfSmote['Decision'], ax=ax2)
+		for p in b2.patches:
+			b2.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
 		ax2.set_title('Type of properties to have the loan accepted')		
 		
 		# what is the monthly salary that is likely to have the loan accepted?
-		monthlySalary = DataFrame(self.dfSmote1, columns=['Monthly_Salary','Decision'])
-		
-		figure3 = plt.Figure(figsize=(5,5), dpi=50)
+		figure3 = plt.Figure(figsize=(8.5,5), dpi=50)
 		ax3 = figure3.add_subplot(111)
 		canvas3 = FigureCanvasTkAgg(figure3,master=self.SmoteFrame)
 		canvas3.draw()
-		canvas3.get_tk_widget().place(x=10,y=320)
-		monthlySalary  = monthlySalary[['Monthly_Salary', 'Decision']].groupby('Monthly_Salary').sum()
-		monthlySalary.plot(kind='bar', legend=True, ax=ax3)
+		canvas3.get_tk_widget().place(x=410,y=300)
+		b3 = sns.countplot(x=self.dfSmote['Monthly_Salary'],order=self.dfSmote['Monthly_Salary'].value_counts().index,hue=self.dfSmote['Decision'], ax=ax3)
+		for p in b3.patches:
+			b3.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
 		ax3.set_title('Monthly salary to have the loan accepted')	
-
-		# Count the number of customers by Decision and Employment_Type
-		employVsDecision = DataFrame(self.dfSmote1, columns=['Employment_Type','Decision'])
 		
-		figure4 = plt.Figure(figsize=(5,5), dpi=50)
+		# what is the decision made by the bank the most frequent?
+		figure4 = plt.Figure(figsize=(8,10.5), dpi=50)
 		ax4 = figure4.add_subplot(111)
 		canvas4 = FigureCanvasTkAgg(figure4,master=self.SmoteFrame)
 		canvas4.draw()
-		canvas4.get_tk_widget().place(x=270,y=320)
-		employVsDecision  = employVsDecision[['Employment_Type', 'Decision']].groupby('Decision').sum()
-		employVsDecision.plot(kind='bar', legend=True, ax=ax4)
-		ax4.set_title('Number of customers by Decision and Employment_Type')	
-		
-		# what is the monthly salary that is likely to have the loan accepted?
-		salaryVsDecision = DataFrame(self.dfSmote1, columns=['Monthly_Salary','Decision'])
-		
-		figure5 = plt.Figure(figsize=(5,5), dpi=50)
-		ax5 = figure5.add_subplot(111)
-		canvas5 = FigureCanvasTkAgg(figure5,master=self.SmoteFrame)
-		canvas5.draw()
-		canvas5.get_tk_widget().place(x=530,y=320)
-		salaryVsDecision  = salaryVsDecision[['Monthly_Salary', 'Decision']].groupby('Decision').sum()
-		salaryVsDecision.plot(kind='bar', legend=True, ax=ax5)
-		ax5.set_title('Number of customers by Decision and Monthly_Salary')	
-		
-		# what is the decision made by the bank the most frequent?
-		decision = DataFrame(self.dfSmote1, columns=['Decision'])
-	
-		figure6 = plt.Figure(figsize=(8,10), dpi=50)
-		ax6 = figure6.add_subplot(111)
-		canvas6 = FigureCanvasTkAgg(figure6,master=self.SmoteFrame)
-		canvas6.draw()
-		canvas6.get_tk_widget().place(x=790,y=65)
-
-		decision['Decision'].value_counts().plot(kind='bar', legend=True, ax=ax6, color=tuple(["g", "r","b","y","k"]))
-		ax6.set_title('Most frequent decision made by the bank')
-		ax6.set_xlabel('Decision')
-		ax6.legend(["Reject", "Accept"])
-		#ax6.plot(x='Decision', rot=0, title='', figsize=(15,10), fontsize=12)
-		#ax6.set_index('Decision').plot.bar(rot=0, title='Most frequent decision made by the bank', figsize=(15,10), fontsize=12)
+		canvas4.get_tk_widget().place(x=810,y=45)
+		b4 = sns.countplot(x='Decision', data = self.dfSmote, ax=ax4)
+		for p in b4.patches:
+			b4.annotate("%.0f" % p.get_height(), (p.get_x() + 
+			p.get_width() / 2., p.get_height()), 
+			ha='center', va='center', rotation=0, 
+			xytext=(0, 18), textcoords='offset points')
+		ax4.set_title('Most frequent decision made by the bank')	
 		
 	# Association Rule Mining
 	def runARM(self):
@@ -594,10 +514,10 @@ class LoanPredictor():
 		labelMain = tk.Label(self.armFrame, bg="SkyBlue3", fg="white", text ="Association Rule Mining", font=('Helvetica', 15, 'bold')).grid(row=0,column=0)
 		emptyCanvas = tk.Canvas(self.armFrame, width="1200",height = "600").grid(row=1, column=0)
 
-		self.df4 = self.df3.copy()
-		self.dictdf4 = defaultdict(LabelEncoder)
-		self.df4.drop(axis= 1, inplace = True, columns = ['Decision','Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
-		self.df4 = self.df4.apply(lambda x: self.dictdf4[x.name].inverse_transform(x))
+		self.df4 = self.dfSmote.copy()
+		self.df4 = self.df4.apply(lambda x: self.dictionary[x.name].fit_transform(x))
+		self.df4.drop(axis= 1, inplace = True, columns = ['Decision','Number_of_Bank_Products','Credit_Card_Exceed_Months','Loan_Amount','Loan_Tenure_Year','More_Than_One_Products','Number_of_Dependents','Years_to_Financial_Freedom','Number_of_Credit_Card_Facility','Number_of_Properties','Number_of_Loan_to_Approve','Years_for_Property_to_Completion','State','Number_of_Side_Income','Total_Sum_of_Loan','Total_Income_for_Join_Application','Score'])
+		self.df4 = self.df4.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		self.minSuppValue = DoubleVar()
 		self.minConfValue = DoubleVar()
@@ -606,11 +526,11 @@ class LoanPredictor():
 		self.maxConsValue = DoubleVar()
 		
 		minSuppLabel = tk.Label(self.armFrame, text='Choose the minimum support').place(x=530,y=90)
-		minsupp = tk.Scale(self.armFrame, from_=0.0001, to=0.0300, digits = 5, resolution = 0.0001, orient=HORIZONTAL, variable=self.minSuppValue).place(x=570,y=110)
+		minsupp = tk.Scale(self.armFrame, from_=0.0100, to=0.0300, digits = 5, resolution = 0.0001, orient=HORIZONTAL, variable=self.minSuppValue).place(x=570,y=110)
 		minConfLabel = tk.Label(self.armFrame, text='Choose the minimum confidence').place(x=530,y=150)		
-		minconf = tk.Scale(self.armFrame, from_=0.50, to=1.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=570,y=170)
+		minconf = tk.Scale(self.armFrame, from_=0.70, to=1.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minConfValue).place(x=570,y=170)
 		minLiftLabel = tk.Label(self.armFrame, text='Choose the minimum lift').place(x=530,y=210)
-		minlift = tk.Scale(self.armFrame, from_=0.50, to=2.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=570,y=230)
+		minlift = tk.Scale(self.armFrame, from_=0.70, to=2.00, digits = 3, resolution = 0.01, orient=HORIZONTAL, variable=self.minLiftValue).place(x=570,y=230)
 		maxAnteLabel = tk.Label(self.armFrame, text='Choose maximum number of antecedent').place(x=510,y=270)		
 		maxante = tk.Scale(self.armFrame, from_=1, to=10, orient=HORIZONTAL, variable=self.maxAnteValue).place(x=570,y=290)
 		maxConsLabel = tk.Label(self.armFrame, text='Choose maximum number of consequent').place(x=510,y=330)			
@@ -695,10 +615,9 @@ class LoanPredictor():
 		canvas = FigureCanvasTkAgg(figure,master=self.genArmFrame)
 		canvas.draw()
 		canvas.get_tk_widget().place(x=600,y=47)
-		ax.scatter(support, confidence, data=dfArm, alpha=0.5, marker="*", label='Rules')
+		ax.scatter(support, confidence, data=dfArm, alpha=0.5, marker="*")
 		ax.set_xlabel('Support')
 		ax.set_ylabel('Confidence')
-		ax.legend()
 	
 	def hot_encode(self,x): 
 		if(x<= 0): 
@@ -748,8 +667,8 @@ class LoanPredictor():
 		# Chosen cluster = 2, because it is the elbow
 		km = KModes(n_clusters=2, init = "Cao", n_init = 1, verbose=1)
 		clusters = km.fit_predict(self.df5)
-		self.dictdf5 = defaultdict(LabelEncoder)
-		self.df5 = self.df5.apply(lambda x: self.dictdf5[x.name].inverse_transform(x))
+		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].fit_transform(x))
+		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
 		
 		clusters_df = pd.DataFrame(clusters)
 		clusters_df.columns = ['Cluster']
