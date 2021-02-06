@@ -667,14 +667,14 @@ class LoanPredictor():
 		canvas = FigureCanvasTkAgg(figure,master=self.kmcFrame)
 		canvas.draw()
 		canvas.get_tk_widget().place(x=30,y=45)
-		ax.plot(y,cost, label='Elbow = 2.0')
+		ax.plot(y,cost, label='Elbow = 3.0')
 		ax.set_xlabel('K')
 		ax.set_ylabel('Cost')
 		ax.legend()
 		ax.set_title('Finding the Elbow for K')
 		
-		# Chosen cluster = 2, because it is the elbow
-		km = KModes(n_clusters=2, init = "Cao", n_init = 1, verbose=1)
+		# Chosen cluster = 3, because it is the elbow
+		km = KModes(n_clusters=3, init = "Cao", n_init = 1, verbose=1)
 		clusters = km.fit_predict(self.df5)
 		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].fit_transform(x))
 		self.df5 = self.df5.apply(lambda x: self.dictionary[x.name].inverse_transform(x))
@@ -690,7 +690,7 @@ class LoanPredictor():
 		canvas1 = FigureCanvasTkAgg(figure1,master=self.kmcFrame)
 		canvas1.draw()
 		canvas1.get_tk_widget().place(x=30,y=315)
-		ax1.set_title('Number of Clusters = 2')
+		ax1.set_title('Number of Clusters = 3')
 		b = sns.countplot(x='Cluster', data=df5_new, ax=ax1)
 		for p in b.patches:
 			b.annotate("%.0f" % p.get_height(), (p.get_x() + 
